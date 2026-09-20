@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ExternalLink, ArrowUpRight, Sparkles } from 'lucide-react';
 import { GithubIcon } from '@/components/ui/Icons';
 import { projects } from '@/lib/data/portfolio';
+import { SpotlightCard } from '@/components/ui/SpotlightCard';
 
 export function SelectedWork() {
   const [filter, setFilter] = useState<string>('all');
@@ -64,12 +65,13 @@ export function SelectedWork() {
         {filteredProjects.map((project) => {
           const isFlagship = project.tier === 'S';
           return (
-            <div
+            <SpotlightCard
               key={project.slug}
-              className={`group relative rounded-2xl border transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-lg card-ambient-glow ${
+              spotlightColor={`${project.color || 'var(--primary)'}25`}
+              className={`flex flex-col justify-between ${
                 isFlagship
-                  ? 'bg-card border-border-accent hover:border-primary shadow-xl'
-                  : 'bg-card border-border hover:border-border-accent'
+                  ? 'border-border-accent hover:border-primary shadow-xl'
+                  : 'border-border hover:border-border-accent'
               }`}
               data-cursor="CASE STUDY"
             >
@@ -187,7 +189,7 @@ export function SelectedWork() {
                   )}
                 </div>
               </div>
-            </div>
+            </SpotlightCard>
           );
         })}
       </div>

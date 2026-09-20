@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { getStoredTheme, ThemeId } from '@/lib/theme';
 
 export function ThemeBackgroundCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [theme, setLocalTheme] = useState<ThemeId>('cyber-cyan');
   const [mounted, setMounted] = useState(false);
 
@@ -22,7 +23,6 @@ export function ThemeBackgroundCanvas() {
 
     window.addEventListener('theme-changed', handleThemeChange);
 
-    // Also observe attribute changes on documentElement
     const observer = new MutationObserver(() => {
       const current = document.documentElement.getAttribute('data-theme') as ThemeId | null;
       if (current) {
@@ -41,182 +41,445 @@ export function ThemeBackgroundCanvas() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!mounted) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d', { alpha: true });
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    const handleResize = () => {
+      if (!canvas) return;
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    // Mouse tracking with lerp
+    const mouse = {
+      x: -1000,
+      y: -1000,
+      targetX: -1000,
+      targetY: -1000,
+      radius: 160,
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      mouse.targetX = e.clientX;
+      mouse.targetY = e.clientY;
+    };
+
+    const handleMouseLeave = () => {
+      mouse.targetX = -1000;
+      mouse.targetY = -1000;
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseleave', handleMouseLeave);
+
+    // ====================================================
+    // MODE 1: CYBER CYAN — Constellation Nodes & Interactive Web
+    // ====================================================
+    interface CyberParticle {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      size: number;
+      baseAlpha: number;
+    }
+
+    const cyberCount = Math.min(Math.floor((width * height) / 16000), 85);
+    const cyberParticles: CyberParticle[] = Array.from({ length: cyberCount }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - 0.5) * 0.7,
+      vy: (Math.random() - 0.5) * 0.7,
+      size: Math.random() * 2 + 1,
+      baseAlpha: Math.random() * 0.4 + 0.2,
+    }));
+
+    // ====================================================
+    // MODE 2: SYNTH VIOLET — Flowing Aurora Wave Ribbons & Nebula Particles
+    // ====================================================
+    interface SynthParticle {
+      x: number;
+      y: number;
+      radius: number;
+      vx: number;
+      vy: number;
+      hue: number;
+      alpha: number;
+    }
+    const synthParticles: SynthParticle[] = Array.from({ length: 45 }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      radius: Math.random() * 80 + 40,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      hue: Math.random() > 0.5 ? 280 : 320, // violet to pink
+      alpha: Math.random() * 0.08 + 0.03,
+    }));
+
+    // ====================================================
+    // MODE 3: MATRIX EMERALD — Digital Phosphor Stream Rain
+    // ====================================================
+    const fontSize = 14;
+    const columns = Math.floor(width / fontSize);
+    const matrixDrops: number[] = Array.from({ length: columns }, () => Math.floor(Math.random() * -50));
+    const chars = '0123456789ABCDEFｦｱｳｴｵｶｷｹｺｻｼｽｾｿﾀﾂﾃﾅﾆﾇﾈﾊﾋﾎﾏﾐﾑﾒﾓﾔﾕﾗﾘﾜ';
+
+    // ====================================================
+    // MODE 4: SOLAR AMBER — CAD Vector Grid & Radar Sweep
+    // ====================================================
+    let radarAngle = 0;
+    interface CADNode {
+      x: number;
+      y: number;
+      ox: number;
+      oy: number;
+    }
+    const cadStep = 90;
+    const cadCols = Math.ceil(width / cadStep) + 1;
+    const cadRows = Math.ceil(height / cadStep) + 1;
+    const cadNodes: CADNode[] = [];
+    for (let i = 0; i < cadCols; i++) {
+      for (let j = 0; j < cadRows; j++) {
+        cadNodes.push({
+          x: i * cadStep,
+          y: j * cadStep,
+          ox: i * cadStep,
+          oy: j * cadStep,
+        });
+      }
+    }
+
+    // ====================================================
+    // MODE 5: CRIMSON OVERDRIVE — Kinetic Circuit Energy Sparks
+    // ====================================================
+    interface KineticParticle {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      length: number;
+      speed: number;
+      alpha: number;
+    }
+    const kineticParticles: KineticParticle[] = Array.from({ length: 50 }, () => {
+      const angle = Math.floor(Math.random() * 4) * (Math.PI / 2); // 0, 90, 180, 270 deg
+      const speed = Math.random() * 2 + 1.2;
+      return {
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        length: Math.random() * 40 + 15,
+        speed,
+        alpha: Math.random() * 0.4 + 0.2,
+      };
+    });
+
+    // ====================================================
+    // MODE 6: STUDIO LIGHT — Swiss Dot-Grid with Fluid Waves
+    // ====================================================
+    const swissSpacing = 42;
+    const swissCols = Math.ceil(width / swissSpacing) + 1;
+    const swissRows = Math.ceil(height / swissSpacing) + 1;
+    interface SwissDot {
+      bx: number;
+      by: number;
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+    }
+    const swissDots: SwissDot[] = [];
+    for (let c = 0; c < swissCols; c++) {
+      for (let r = 0; r < swissRows; r++) {
+        const bx = c * swissSpacing;
+        const by = r * swissSpacing;
+        swissDots.push({ bx, by, x: bx, y: by, vx: 0, vy: 0 });
+      }
+    }
+
+    let time = 0;
+
+    // Main 60fps Animation Loop
+    const render = () => {
+      time += 0.015;
+
+      // Mouse smooth interpolation
+      mouse.x += (mouse.targetX - mouse.x) * 0.1;
+      mouse.y += (mouse.targetY - mouse.y) * 0.1;
+
+      ctx.clearRect(0, 0, width, height);
+
+      // ----------------------------------------------------
+      // Render based on current theme
+      // ----------------------------------------------------
+      if (theme === 'cyber-cyan') {
+        // CYBER CYAN: Interactive Constellation & Nodes
+        for (let i = 0; i < cyberParticles.length; i++) {
+          const p = cyberParticles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+
+          if (p.x < 0 || p.x > width) p.vx *= -1;
+          if (p.y < 0 || p.y > height) p.vy *= -1;
+
+          // Mouse gravity
+          const dx = mouse.x - p.x;
+          const dy = mouse.y - p.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < mouse.radius) {
+            const force = (1 - dist / mouse.radius) * 0.03;
+            p.x += dx * force;
+            p.y += dy * force;
+          }
+
+          // Draw node
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(0, 240, 255, ${p.baseAlpha})`;
+          ctx.fill();
+
+          // Connect to nearby nodes
+          for (let j = i + 1; j < cyberParticles.length; j++) {
+            const p2 = cyberParticles[j];
+            const djx = p.x - p2.x;
+            const djy = p.y - p2.y;
+            const d = Math.sqrt(djx * djx + djy * djy);
+            if (d < 120) {
+              const alpha = (1 - d / 120) * 0.18;
+              ctx.beginPath();
+              ctx.moveTo(p.x, p.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.strokeStyle = `rgba(0, 240, 255, ${alpha})`;
+              ctx.lineWidth = 0.8;
+              ctx.stroke();
+            }
+          }
+
+          // Connect to mouse
+          if (dist < mouse.radius) {
+            const mouseAlpha = (1 - dist / mouse.radius) * 0.35;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(mouse.x, mouse.y);
+            ctx.strokeStyle = `rgba(0, 240, 255, ${mouseAlpha})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+      } else if (theme === 'synth-violet') {
+        // SYNTH VIOLET: Fluid Aurora Mesh Orbs & Waves
+        synthParticles.forEach((p) => {
+          p.x += p.vx;
+          p.y += p.vy;
+
+          if (p.x < -p.radius) p.x = width + p.radius;
+          if (p.x > width + p.radius) p.x = -p.radius;
+          if (p.y < -p.radius) p.y = height + p.radius;
+          if (p.y > height + p.radius) p.y = -p.radius;
+
+          const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
+          grad.addColorStop(0, `hsla(${p.hue}, 85%, 65%, ${p.alpha})`);
+          grad.addColorStop(1, `hsla(${p.hue}, 85%, 65%, 0)`);
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fillStyle = grad;
+          ctx.fill();
+        });
+
+        // Flowing Sine Wave Ribbon
+        ctx.beginPath();
+        for (let x = 0; x <= width; x += 15) {
+          const y = height * 0.5 + Math.sin(x * 0.003 + time) * 70 + Math.cos(x * 0.006 - time * 0.5) * 35;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = 'rgba(168, 85, 247, 0.12)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      } else if (theme === 'matrix-emerald') {
+        // MATRIX EMERALD: Cascading Phosphor Code Rain
+        ctx.font = `${fontSize}px monospace`;
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.75)';
+
+        for (let i = 0; i < matrixDrops.length; i++) {
+          const text = chars[Math.floor(Math.random() * chars.length)];
+          const x = i * fontSize;
+          const y = matrixDrops[i] * fontSize;
+
+          // Glowing head character
+          ctx.fillStyle = 'rgba(167, 243, 208, 0.9)';
+          ctx.fillText(text, x, y);
+
+          // Darker tail
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.35)';
+          const prevChar = chars[Math.floor(Math.random() * chars.length)];
+          ctx.fillText(prevChar, x, y - fontSize);
+
+          if (y > height && Math.random() > 0.975) {
+            matrixDrops[i] = 0;
+          }
+          matrixDrops[i]++;
+        }
+      } else if (theme === 'solar-amber') {
+        // SOLAR AMBER: CAD Drafting Radar & Coordinate Grid
+        radarAngle += 0.008;
+
+        // Rotating radar beam from center top
+        const cx = width * 0.5;
+        const cy = height * 0.35;
+        const radarRadius = Math.max(width, height) * 0.7;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(radarAngle);
+        const radarGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, radarRadius);
+        radarGrad.addColorStop(0, 'rgba(245, 158, 11, 0.15)');
+        radarGrad.addColorStop(0.3, 'rgba(245, 158, 11, 0.04)');
+        radarGrad.addColorStop(1, 'rgba(245, 158, 11, 0)');
+
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, radarRadius, -0.2, 0.2);
+        ctx.closePath();
+        ctx.fillStyle = radarGrad;
+        ctx.fill();
+        ctx.restore();
+
+        // Technical crosshair marks on CAD grid nodes near mouse
+        cadNodes.forEach((node) => {
+          const dx = mouse.x - node.x;
+          const dy = mouse.y - node.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < 180) {
+            const alpha = (1 - dist / 180) * 0.35;
+            ctx.strokeStyle = `rgba(245, 158, 11, ${alpha})`;
+            ctx.lineWidth = 1;
+            // Draw cross (+)
+            ctx.beginPath();
+            ctx.moveTo(node.x - 4, node.y);
+            ctx.lineTo(node.x + 4, node.y);
+            ctx.moveTo(node.x, node.y - 4);
+            ctx.lineTo(node.x, node.y + 4);
+            ctx.stroke();
+          }
+        });
+      } else if (theme === 'crimson-overdrive') {
+        // CRIMSON OVERDRIVE: Kinetic High-Velocity Sparks & Energy Arcs
+        kineticParticles.forEach((p) => {
+          p.x += p.vx;
+          p.y += p.vy;
+
+          if (p.x < 0) p.x = width;
+          if (p.x > width) p.x = 0;
+          if (p.y < 0) p.y = height;
+          if (p.y > height) p.y = 0;
+
+          // Draw kinetic streak
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p.x - p.vx * 8, p.y - p.vy * 8);
+          ctx.strokeStyle = `rgba(255, 42, 95, ${p.alpha})`;
+          ctx.lineWidth = 1.8;
+          ctx.stroke();
+
+          // Mouse proximity boost
+          const dx = mouse.x - p.x;
+          const dy = mouse.y - p.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 130) {
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(mouse.x, mouse.y);
+            ctx.strokeStyle = `rgba(255, 42, 95, ${(1 - dist / 130) * 0.4})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        });
+      } else if (theme === 'studio-light') {
+        // STUDIO LIGHT: Interactive Swiss Dot Grid with Fluid Wave Ripples
+        swissDots.forEach((dot) => {
+          const dx = mouse.x - dot.bx;
+          const dy = mouse.y - dot.by;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          // Fluid displacement
+          if (dist < 130 && dist > 0) {
+            const force = (1 - dist / 130) * 16;
+            const angle = Math.atan2(dy, dx);
+            dot.vx -= Math.cos(angle) * force * 0.15;
+            dot.vy -= Math.sin(angle) * force * 0.15;
+          }
+
+          // Spring back to base position
+          dot.vx += (dot.bx - dot.x) * 0.08;
+          dot.vy += (dot.by - dot.y) * 0.08;
+          dot.vx *= 0.85; // damping
+          dot.vy *= 0.85;
+
+          dot.x += dot.vx;
+          dot.y += dot.vy;
+
+          // Draw dot
+          const displacement = Math.sqrt((dot.x - dot.bx) ** 2 + (dot.y - dot.by) ** 2);
+          const alpha = Math.min(0.08 + displacement * 0.04, 0.45);
+          const dotRadius = displacement > 1 ? 2 : 1.2;
+
+          ctx.beginPath();
+          ctx.arc(dot.x, dot.y, dotRadius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(0, 102, 204, ${alpha})`;
+          ctx.fill();
+        });
+      }
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    animationFrameId = requestAnimationFrame(render);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseleave', handleMouseLeave);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [theme, mounted]);
+
   if (!mounted) return null;
 
   return (
     <div
       aria-hidden="true"
-      className="fixed inset-0 pointer-events-none -z-10 overflow-hidden select-none transition-opacity duration-700"
+      className="fixed inset-0 pointer-events-none -z-10 overflow-hidden select-none"
     >
-      {/* ====================================================
-          1. CYBER CYAN MOTIF: Cybernetic Blueprint & HUD
-          ==================================================== */}
-      {theme === 'cyber-cyan' && (
-        <div className="absolute inset-0 animate-in fade-in duration-700">
-          {/* Ambient Radial Spotlight */}
-          <div
-            className="absolute -top-40 -left-40 w-[650px] h-[650px] rounded-full blur-[140px] opacity-25"
-            style={{ backgroundColor: 'rgba(var(--accent-rgb), 0.15)' }}
-          />
-          <div
-            className="absolute -bottom-40 -right-40 w-[700px] h-[700px] rounded-full blur-[160px] opacity-15"
-            style={{ backgroundColor: 'rgba(59, 130, 246, 0.12)' }}
-          />
+      {/* Real High-Performance Canvas Animation Engine */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full pointer-events-none"
+      />
 
-          {/* Technical Blueprint Grid (3-5% opacity) */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,240,255,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,240,255,0.06)_1px,transparent_1px)] bg-[size:3.5rem_3.5rem] [mask-image:radial-gradient(ellipse_75%_65%_at_50%_35%,#000_65%,transparent_100%)]" />
-
-          {/* HUD Telemetry Watermarks */}
-          <div className="absolute top-28 left-6 text-[10px] font-mono text-cyan-400/20 tracking-widest uppercase hidden lg:block">
-            ┌ SYS_GRID: CYBER_BLUEPRINT_V4 ── [ACTIVE]
-          </div>
-          <div className="absolute top-28 right-6 text-[10px] font-mono text-cyan-400/20 tracking-widest uppercase hidden lg:block">
-            COORD: 28.6139° N, 77.2090° E ┐
-          </div>
-          <div className="absolute bottom-10 left-6 text-[10px] font-mono text-cyan-400/15 tracking-widest uppercase hidden lg:block">
-            └ QUANTUM_CORE: SYNCHRONIZED
-          </div>
-          <div className="absolute bottom-10 right-6 text-[10px] font-mono text-cyan-400/15 tracking-widest uppercase hidden lg:block">
-            LATENCY: 4.2MS // HIGH_THROUGHPUT ┘
-          </div>
-        </div>
-      )}
-
-      {/* ====================================================
-          2. SYNTH VIOLET MOTIF: Neon Aurora & Starlight
-          ==================================================== */}
-      {theme === 'synth-violet' && (
-        <div className="absolute inset-0 animate-in fade-in duration-700">
-          {/* Aurora Floating Mesh Orbs */}
-          <div className="absolute -top-32 left-1/4 w-[600px] h-[600px] rounded-full bg-purple-600/15 blur-[160px] animate-pulse duration-[8000ms]" />
-          <div className="absolute top-1/3 -right-20 w-[550px] h-[550px] rounded-full bg-pink-500/12 blur-[150px]" />
-          <div className="absolute -bottom-20 left-10 w-[600px] h-[600px] rounded-full bg-indigo-600/15 blur-[170px]" />
-
-          {/* Micro Starlight Constellation Dots (3% opacity) */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(244,114,182,0.12)_1px,transparent_1px)] bg-[size:2.5rem_2.5rem] [mask-image:radial-gradient(ellipse_80%_60%_at_50%_40%,#000_60%,transparent_100%)]" />
-
-          {/* Horizon Subtle Glow Line */}
-          <div className="absolute top-1/2 inset-x-0 h-px bg-gradient-to-r from-transparent via-purple-500/15 to-transparent" />
-
-          {/* Atmospheric Telemetry */}
-          <div className="absolute top-28 left-6 text-[10px] font-mono text-purple-400/20 tracking-widest uppercase hidden lg:block">
-            ✦ AURORA_FIELD: HARMONIC_RESONANCE
-          </div>
-          <div className="absolute bottom-10 right-6 text-[10px] font-mono text-pink-400/20 tracking-widest uppercase hidden lg:block">
-            NEO_TOKYO_ENGINE // SPECTRUM: VIOLET
-          </div>
-        </div>
-      )}
-
-      {/* ====================================================
-          3. MATRIX EMERALD MOTIF: Phosphor Terminal & Scanlines
-          ==================================================== */}
-      {theme === 'matrix-emerald' && (
-        <div className="absolute inset-0 animate-in fade-in duration-700">
-          {/* Phosphor Terminal Ambient Glow */}
-          <div className="absolute -top-20 -right-20 w-[600px] h-[600px] rounded-full bg-emerald-500/12 blur-[150px]" />
-          <div className="absolute bottom-0 -left-20 w-[500px] h-[500px] rounded-full bg-teal-500/10 blur-[140px]" />
-
-          {/* Terminal Dot-Matrix Grid */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.14)_1px,transparent_1px)] bg-[size:1.75rem_1.75rem] [mask-image:radial-gradient(ellipse_75%_65%_at_50%_35%,#000_65%,transparent_100%)]" />
-
-          {/* Horizontal CRT Scanlines (2% opacity) */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(16,185,129,0.04)_1px,transparent_1px)] bg-[size:100%_4px] opacity-60" />
-
-          {/* Telemetry Code Watermarks */}
-          <div className="absolute top-28 left-6 font-mono text-[10px] text-emerald-500/25 space-y-1 hidden lg:block select-none">
-            <p>&gt; 0x7F_ALLOC: BUFFER_OK</p>
-            <p>&gt; TCP_SOCKET: STREAM_ESTABLISHED</p>
-            <p>&gt; TLS1.3_CIPHER: ECDHE_RSA_AES</p>
-          </div>
-          <div className="absolute bottom-10 right-6 font-mono text-[10px] text-emerald-500/20 text-right space-y-1 hidden lg:block select-none">
-            <p>MEM: 412MB / 1024MB</p>
-            <p>PACKETS_TX: 94,821 / RX: 94,821</p>
-            <p>SYS_STATUS: 100% OPERATIONAL</p>
-          </div>
-        </div>
-      )}
-
-      {/* ====================================================
-          4. SOLAR AMBER MOTIF: Industrial CAD Drafting
-          ==================================================== */}
-      {theme === 'solar-amber' && (
-        <div className="absolute inset-0 animate-in fade-in duration-700">
-          {/* Warm Industrial Directional Spotlight */}
-          <div className="absolute top-0 right-1/4 w-[750px] h-[750px] rounded-full bg-amber-500/12 blur-[170px]" />
-          <div className="absolute -bottom-20 -left-20 w-[550px] h-[550px] rounded-full bg-orange-500/10 blur-[150px]" />
-
-          {/* 45° CAD Hatched Linework (4% opacity) */}
-          <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,rgba(245,158,11,0.03)_0,rgba(245,158,11,0.03)_1px,transparent_0,transparent_28px)] [mask-image:radial-gradient(ellipse_75%_65%_at_50%_35%,#000_65%,transparent_100%)]" />
-
-          {/* Orthogonal Grid Lines */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(245,158,11,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(245,158,11,0.04)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_70%_55%_at_50%_35%,#000_60%,transparent_100%)]" />
-
-          {/* CAD Axis Ticks & Drafting Annotations */}
-          <div className="absolute top-28 left-6 text-[10px] font-mono text-amber-500/20 tracking-widest hidden lg:block">
-            [X-AXIS // DRAFTING_PITCH: 64.0MM]
-          </div>
-          <div className="absolute top-28 right-6 text-[10px] font-mono text-amber-500/20 tracking-widest hidden lg:block">
-            [Y-AXIS // ELEVATION: +14.2°]
-          </div>
-          <div className="absolute bottom-10 left-6 text-[10px] font-mono text-amber-500/15 tracking-widest hidden lg:block">
-            SPEC_REV: 4.8 // TOLERANCE: ±0.005MM
-          </div>
-        </div>
-      )}
-
-      {/* ====================================================
-          5. CRIMSON OVERDRIVE MOTIF: Kinetic Circuitry
-          ==================================================== */}
-      {theme === 'crimson-overdrive' && (
-        <div className="absolute inset-0 animate-in fade-in duration-700">
-          {/* High-Voltage Ambient Rim Glow */}
-          <div className="absolute -top-20 -left-20 w-[650px] h-[650px] rounded-full bg-rose-600/14 blur-[160px]" />
-          <div className="absolute -bottom-20 -right-20 w-[600px] h-[600px] rounded-full bg-orange-600/12 blur-[150px]" />
-
-          {/* Angular Circuit-Like Trace Grid */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,42,95,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,42,95,0.05)_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_80%_60%_at_50%_35%,#000_60%,transparent_100%)]" />
-
-          {/* 60° Diagonal Velocity Lines */}
-          <div className="absolute inset-0 bg-[repeating-linear-gradient(60deg,rgba(255,42,95,0.02)_0,rgba(255,42,95,0.02)_1px,transparent_0,transparent_40px)] opacity-50" />
-
-          {/* High-Octane Telemetry */}
-          <div className="absolute top-28 left-6 text-[10px] font-mono text-rose-500/25 tracking-widest uppercase hidden lg:block">
-            ⚡ OVERDRIVE_BUS // VOLTAGE: 1.25V [BOOST]
-          </div>
-          <div className="absolute bottom-10 right-6 text-[10px] font-mono text-rose-500/20 tracking-widest uppercase hidden lg:block">
-            CLOCK: 5.4 GHZ // THERMAL: NOMINAL
-          </div>
-        </div>
-      )}
-
-      {/* ====================================================
-          6. STUDIO LIGHT MOTIF: Swiss Minimalist & Dot-Grid
-          ==================================================== */}
-      {theme === 'studio-light' && (
-        <div className="absolute inset-0 animate-in fade-in duration-700">
-          {/* Architectural Soft Daylight Vignette */}
-          <div className="absolute top-0 right-10 w-[700px] h-[700px] rounded-full bg-sky-200/35 blur-[160px]" />
-          <div className="absolute -bottom-10 left-10 w-[650px] h-[650px] rounded-full bg-blue-100/40 blur-[150px]" />
-
-          {/* Precision Swiss Dot-Matrix Grid (Drafting Paper) */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(15,23,42,0.08)_1px,transparent_1px)] bg-[size:2rem_2rem] [mask-image:radial-gradient(ellipse_85%_70%_at_50%_35%,#000_70%,transparent_100%)]" />
-
-          {/* Architectural Crosshair Markers (+) at Grid Points */}
-          <div className="absolute top-28 left-8 text-xs font-mono text-slate-400/40 select-none hidden lg:block">
-            + 01 / GRID
-          </div>
-          <div className="absolute top-28 right-8 text-xs font-mono text-slate-400/40 select-none hidden lg:block">
-            + 02 / SCALE 1:1
-          </div>
-          <div className="absolute bottom-10 left-8 text-xs font-mono text-slate-400/35 select-none hidden lg:block">
-            + 03 / SYSTEM STUDIO
-          </div>
-          <div className="absolute bottom-10 right-8 text-xs font-mono text-slate-400/35 select-none hidden lg:block">
-            + 04 / SWISS TYPOGRAPHY
-          </div>
-        </div>
-      )}
+      {/* Ambient Vignette Gradients */}
+      <div
+        className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full blur-[160px] opacity-20 pointer-events-none transition-colors duration-700"
+        style={{ backgroundColor: 'rgba(var(--accent-rgb), 0.15)' }}
+      />
+      <div
+        className="absolute -bottom-40 -right-40 w-[600px] h-[600px] rounded-full blur-[160px] opacity-15 pointer-events-none transition-colors duration-700"
+        style={{ backgroundColor: 'rgba(var(--accent-rgb), 0.12)' }}
+      />
     </div>
   );
 }

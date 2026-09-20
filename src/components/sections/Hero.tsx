@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowUpRight, Terminal, Sparkles, Layers } from 'lucide-react';
 import { personalInfo } from '@/lib/data/portfolio';
+import { SpotlightCard } from '@/components/ui/SpotlightCard';
 
 export function Hero() {
   const [roleIndex, setRoleIndex] = useState(0);
@@ -105,29 +106,29 @@ export function Hero() {
 
         {/* Bottom Metrics & Highlights Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-16 mt-12 border-t border-border">
-          <div className="p-4 rounded-xl bg-card border border-border shadow-xs card-beam card-ambient-glow">
+          <SpotlightCard className="p-4 rounded-xl">
             <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Architecture</span>
             <div className="text-xl sm:text-2xl font-bold text-foreground mt-1">5 Micro-Frontends</div>
             <p className="text-xs text-muted-foreground mt-1">Decoupled portals for multi-vendor scale</p>
-          </div>
+          </SpotlightCard>
 
-          <div className="p-4 rounded-xl bg-card border border-border shadow-xs card-beam card-ambient-glow">
+          <SpotlightCard className="p-4 rounded-xl">
             <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Real-Time Core</span>
             <div className="text-xl sm:text-2xl font-bold text-primary mt-1">&lt; 50ms State Sync</div>
             <p className="text-xs text-muted-foreground mt-1">Socket.IO rooms + Redis pub/sub pipelines</p>
-          </div>
+          </SpotlightCard>
 
-          <div className="p-4 rounded-xl bg-card border border-border shadow-xs card-beam card-ambient-glow">
+          <SpotlightCard className="p-4 rounded-xl">
             <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Payments &amp; Security</span>
             <div className="text-xl sm:text-2xl font-bold text-foreground mt-1">Dual Gateway</div>
             <p className="text-xs text-muted-foreground mt-1">Stripe + Razorpay webhook validation</p>
-          </div>
+          </SpotlightCard>
 
-          <div className="p-4 rounded-xl bg-card border border-border shadow-xs card-beam card-ambient-glow">
+          <SpotlightCard className="p-4 rounded-xl">
             <span className="text-xs font-mono uppercase text-muted-foreground tracking-wider">Data Integrity</span>
             <div className="text-xl sm:text-2xl font-bold text-emerald-500 mt-1">100% Verified</div>
             <p className="text-xs text-muted-foreground mt-1">Zero fabricated metrics, real GitHub projects</p>
-          </div>
+          </SpotlightCard>
         </div>
       </div>
     </section>
