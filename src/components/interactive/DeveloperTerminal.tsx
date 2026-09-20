@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Terminal as TerminalIcon, X, CornerDownLeft } from 'lucide-react';
 import { projects, personalInfo, skills } from '@/lib/data/portfolio';
+import { themes, setTheme, ThemeId } from '@/lib/theme';
 
 interface CommandOutput {
   command: string;
@@ -68,6 +69,7 @@ export function DeveloperTerminal() {
               <div><span className="text-cyan-400 font-mono">date</span> — System ISO timestamp</div>
               <div><span className="text-cyan-400 font-mono">contact</span> — Get direct contact links</div>
               <div><span className="text-cyan-400 font-mono">github</span> — Open GitHub in browser</div>
+              <div><span className="text-cyan-400 font-mono">theme</span> — Switch color theme tokens (cyber-cyan, synth-violet, matrix-emerald, solar-amber, crimson-overdrive)</div>
               <div><span className="text-cyan-400 font-mono">clear</span> — Clear the terminal screen</div>
               <div><span className="text-cyan-400 font-mono">exit</span> — Close developer terminal</div>
             </div>
@@ -186,6 +188,37 @@ export function DeveloperTerminal() {
         break;
 
       default:
+        if (trimmed === 'theme' || trimmed.startsWith('theme ')) {
+          const parts = trimmed.split(' ');
+          const targetTheme = parts[1];
+          if (!targetTheme || targetTheme === 'list') {
+            res = (
+              <div className="space-y-1 text-xs font-mono">
+                <p className="text-cyan-400 font-bold">Available Design Token Themes:</p>
+                {themes.map((t) => (
+                  <div key={t.id}>
+                    <span className="text-white font-bold">{t.id}</span> — {t.name} ({t.label})
+                  </div>
+                ))}
+                <p className="text-neutral-400 mt-1">Usage: theme &lt;theme-id&gt; (e.g. theme synth-violet)</p>
+              </div>
+            );
+          } else if (themes.some((t) => t.id === targetTheme)) {
+            setTheme(targetTheme as ThemeId);
+            res = (
+              <p className="text-xs font-mono text-emerald-400">
+                Switched color design tokens to: <span className="font-bold">{targetTheme}</span>
+              </p>
+            );
+          } else {
+            res = (
+              <p className="text-xs text-rose-400">
+                Unknown theme &apos;{targetTheme}&apos;. Type <span className="text-amber-400">theme list</span> to view valid themes.
+              </p>
+            );
+          }
+          break;
+        }
         res = (
           <p className="text-xs text-rose-400">
             Command not recognized: &apos;{trimmed}&apos;. Type <span className="text-amber-400 font-bold">help</span> for available commands.

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Terminal, Search, Menu, X } from 'lucide-react';
 import { GithubIcon } from '@/components/ui/Icons';
+import { ThemeToggle } from '@/components/interactive/ThemeToggle';
 import { navItems, personalInfo } from '@/lib/data/portfolio';
 
 export function Navigation() {
@@ -88,6 +89,9 @@ export function Navigation() {
               </span>
               <span className="text-[11px] font-medium">Available</span>
             </div>
+
+            {/* Theme Switcher */}
+            <ThemeToggle />
 
             {/* Command Palette Trigger */}
             <button

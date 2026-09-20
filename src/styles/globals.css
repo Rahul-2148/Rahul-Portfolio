@@ -1,15 +1,105 @@
 @import "tailwindcss";
 
 @layer base {
-  :root {
-    --bg-primary: #050508;
-    --bg-secondary: #0b0b10;
-    --bg-card: rgba(18, 18, 26, 0.7);
+  /* ====================================================
+     DEFAULT DESIGN TOKENS (Cyber Cyan)
+     ==================================================== */
+  :root,
+  [data-theme="cyber-cyan"] {
+    --bg-base: #050508;
+    --bg-surface: #0a0b12;
+    --bg-card: rgba(14, 16, 26, 0.75);
+    --bg-card-hover: rgba(20, 24, 38, 0.9);
     --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-hover: rgba(0, 240, 255, 0.3);
-    --accent-cyan: #00f0ff;
-    --accent-blue: #3b82f6;
-    --accent-emerald: #10b981;
+    --border-accent: rgba(0, 240, 255, 0.35);
+    --border-accent-strong: #00f0ff;
+    --accent-primary: #00f0ff;
+    --accent-secondary: #3b82f6;
+    --accent-rgb: 0, 240, 255;
+    --accent-glow: 0 0 35px -5px rgba(0, 240, 255, 0.3);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+  }
+
+  /* ====================================================
+     THEME: Synth Violet (Neon Tokyo Purple)
+     ==================================================== */
+  [data-theme="synth-violet"] {
+    --bg-base: #07050e;
+    --bg-surface: #0e091c;
+    --bg-card: rgba(22, 14, 38, 0.75);
+    --bg-card-hover: rgba(30, 20, 52, 0.9);
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-accent: rgba(168, 85, 247, 0.35);
+    --border-accent-strong: #a855f7;
+    --accent-primary: #a855f7;
+    --accent-secondary: #ec4899;
+    --accent-rgb: 168, 85, 247;
+    --accent-glow: 0 0 35px -5px rgba(168, 85, 247, 0.3);
+    --text-primary: #faf5ff;
+    --text-secondary: #c084fc;
+    --text-muted: #7e22ce;
+  }
+
+  /* ====================================================
+     THEME: Matrix Emerald (Cyber Hacker Terminal)
+     ==================================================== */
+  [data-theme="matrix-emerald"] {
+    --bg-base: #030805;
+    --bg-surface: #07130b;
+    --bg-card: rgba(10, 25, 17, 0.75);
+    --bg-card-hover: rgba(15, 36, 25, 0.9);
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-accent: rgba(16, 185, 129, 0.35);
+    --border-accent-strong: #10b981;
+    --accent-primary: #10b981;
+    --accent-secondary: #06b6d4;
+    --accent-rgb: 16, 185, 129;
+    --accent-glow: 0 0 35px -5px rgba(16, 185, 129, 0.3);
+    --text-primary: #f0fdf4;
+    --text-secondary: #86efac;
+    --text-muted: #15803d;
+  }
+
+  /* ====================================================
+     THEME: Solar Amber (High Voltage Radiant Gold)
+     ==================================================== */
+  [data-theme="solar-amber"] {
+    --bg-base: #090704;
+    --bg-surface: #140e08;
+    --bg-card: rgba(28, 20, 12, 0.75);
+    --bg-card-hover: rgba(40, 28, 16, 0.9);
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-accent: rgba(245, 158, 11, 0.35);
+    --border-accent-strong: #f59e0b;
+    --accent-primary: #f59e0b;
+    --accent-secondary: #f97316;
+    --accent-rgb: 245, 158, 11;
+    --accent-glow: 0 0 35px -5px rgba(245, 158, 11, 0.3);
+    --text-primary: #fffbeb;
+    --text-secondary: #fcd34d;
+    --text-muted: #b45309;
+  }
+
+  /* ====================================================
+     THEME: Crimson Overdrive (High Performance Neon Red)
+     ==================================================== */
+  [data-theme="crimson-overdrive"] {
+    --bg-base: #090305;
+    --bg-surface: #14070c;
+    --bg-card: rgba(28, 12, 19, 0.75);
+    --bg-card-hover: rgba(40, 18, 28, 0.9);
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-accent: rgba(255, 42, 95, 0.35);
+    --border-accent-strong: #ff2a5f;
+    --accent-primary: #ff2a5f;
+    --accent-secondary: #fb923c;
+    --accent-rgb: 255, 42, 95;
+    --accent-glow: 0 0 35px -5px rgba(255, 42, 95, 0.3);
+    --text-primary: #fff1f2;
+    --text-secondary: #fda4af;
+    --text-muted: #be123c;
   }
 
   * {
@@ -21,69 +111,95 @@
   html {
     scroll-behavior: smooth;
     color-scheme: dark;
-    background-color: var(--bg-primary);
-    color: #f1f5f9;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   body {
-    background-color: #050508;
-    color: #f1f5f9;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
     min-height: 100vh;
     overflow-x: hidden;
-    selection-background-color: #00f0ff;
-    selection-color: #000000;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   ::selection {
-    background: rgba(0, 240, 255, 0.25);
+    background: rgba(var(--accent-rgb), 0.3);
     color: #ffffff;
   }
 }
 
-/* Custom modern scrollbar */
+/* Custom modern scrollbar with token integration */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #07070a;
+  background: var(--bg-base);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e1e2d;
+  background: rgba(var(--accent-rgb), 0.3);
   border-radius: 9999px;
+  transition: background 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #00f0ff;
+  background: var(--accent-primary);
 }
 
-/* Glassmorphism primitives */
-.glass-panel {
-  background: rgba(13, 13, 20, 0.7);
+/* Token-based design primitives */
+.bg-theme-base {
+  background-color: var(--bg-base);
+}
+
+.bg-theme-surface {
+  background-color: var(--bg-surface);
+}
+
+.bg-theme-card {
+  background-color: var(--bg-card);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-.glass-panel:hover {
-  border-color: rgba(255, 255, 255, 0.14);
+.border-theme-subtle {
+  border-color: var(--border-subtle);
 }
 
-.glass-panel-glow {
-  background: rgba(13, 13, 20, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 240, 255, 0.15);
-  box-shadow: 0 0 30px -10px rgba(0, 240, 255, 0.15);
+.border-theme-accent {
+  border-color: var(--border-accent);
 }
 
-.glow-cyan {
-  text-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+.text-theme-accent {
+  color: var(--accent-primary);
 }
 
-.radial-mask {
-  mask-image: radial-gradient(circle at center, black 40%, transparent 80%);
+.text-theme-secondary {
+  color: var(--text-secondary);
+}
+
+.text-theme-muted {
+  color: var(--text-muted);
+}
+
+.bg-theme-accent {
+  background-color: var(--accent-primary);
+}
+
+.shadow-theme-glow {
+  box-shadow: var(--accent-glow);
+}
+
+.gradient-theme-text {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-theme-border {
+  border-image: linear-gradient(to right, transparent, var(--accent-primary), transparent) 1;
 }

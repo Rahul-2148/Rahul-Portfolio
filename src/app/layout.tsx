@@ -77,8 +77,13 @@ export default function RootLayout({
             }),
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('rahul-portfolio-theme')||'cyber-cyan';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+          }}
+        />
       </head>
-      <body className="bg-[#050508] text-neutral-200 antialiased selection:bg-cyan-500/20 selection:text-cyan-200">
+      <body className="bg-[var(--bg-base)] text-[var(--text-primary)] antialiased transition-colors duration-300">
         <ClientShell>
           <Navigation />
           <main className="min-h-screen pt-20">{children}</main>

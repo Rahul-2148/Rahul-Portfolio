@@ -16,8 +16,10 @@ import {
   Check,
   X,
   FileText,
+  Palette,
 } from 'lucide-react';
 import { personalInfo } from '@/lib/data/portfolio';
+import { themes, setTheme } from '@/lib/theme';
 
 export function CommandPalette() {
   const [isOpen, setIsOpen] = useState(false);
@@ -139,6 +141,16 @@ export function CommandPalette() {
         setIsOpen(false);
       },
     },
+    ...themes.map((t) => ({
+      id: `theme-${t.id}`,
+      label: `Switch Theme: ${t.name} (${t.label})`,
+      category: 'Themes',
+      icon: Palette,
+      action: () => {
+        setTheme(t.id);
+        setIsOpen(false);
+      },
+    })),
     {
       id: 'terminal',
       label: 'Open Developer Terminal',
