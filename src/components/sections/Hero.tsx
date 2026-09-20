@@ -1,11 +1,27 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowUpRight, Terminal, Sparkles, Layers } from 'lucide-react';
 import { personalInfo } from '@/lib/data/portfolio';
 
 export function Hero() {
+  const [roleIndex, setRoleIndex] = useState(0);
+
+  const roles = [
+    'Full-Stack & AI Systems Architect',
+    'Real-Time Event Systems Engineer',
+    'Distributed Micro-Frontend Designer',
+    'High-Concurrency Platform Builder',
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRoleIndex((prev) => (prev + 1) % roles.length);
+    }, 3200);
+    return () => clearInterval(interval);
+  }, [roles.length]);
+
   const toggleTerminal = () => {
     window.dispatchEvent(new CustomEvent('toggle-terminal'));
   };
@@ -27,11 +43,11 @@ export function Hero() {
       </div>
 
       <div className="max-w-7xl mx-auto w-full">
-        {/* Status Pill & Role */}
-        <div className="flex flex-wrap items-center gap-3 mb-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-mono">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Full-Stack &amp; AI Systems Architect</span>
+        {/* Status Pill & Dynamic Role Switcher */}
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-mono transition-all duration-300">
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span className="transition-opacity duration-300">{roles[roleIndex]}</span>
           </div>
 
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono">

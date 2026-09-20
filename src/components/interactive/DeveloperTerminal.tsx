@@ -63,6 +63,9 @@ export function DeveloperTerminal() {
               <div><span className="text-cyan-400 font-mono">projects</span> — Flagship & featured systems</div>
               <div><span className="text-cyan-400 font-mono">architecture</span> — High-level distributed blueprint</div>
               <div><span className="text-cyan-400 font-mono">skills</span> — Verified tech stack & proficiencies</div>
+              <div><span className="text-cyan-400 font-mono">system</span> — Architecture telemetry & engine</div>
+              <div><span className="text-cyan-400 font-mono">whoami</span> — Current session credentials</div>
+              <div><span className="text-cyan-400 font-mono">date</span> — System ISO timestamp</div>
               <div><span className="text-cyan-400 font-mono">contact</span> — Get direct contact links</div>
               <div><span className="text-cyan-400 font-mono">github</span> — Open GitHub in browser</div>
               <div><span className="text-cyan-400 font-mono">clear</span> — Clear the terminal screen</div>
@@ -133,6 +136,32 @@ export function DeveloperTerminal() {
             <p><span className="text-neutral-500 font-mono">Email:</span> <a href={`mailto:${personalInfo.email}`} className="text-cyan-400 hover:underline">{personalInfo.email}</a></p>
             <p><span className="text-neutral-500 font-mono">GitHub:</span> <a href={personalInfo.github} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline">{personalInfo.github}</a></p>
             <p><span className="text-neutral-500 font-mono">Status:</span> <span className="text-emerald-400">Available for Opportunities</span></p>
+          </div>
+        );
+        break;
+
+      case 'whoami':
+        res = (
+          <p className="text-xs text-neutral-300">
+            guest@rahul-portfolio (visitor session: recruiter/engineer). Full access granted upon hiring.
+          </p>
+        );
+        break;
+
+      case 'date':
+        res = <p className="text-xs font-mono text-cyan-300">{new Date().toISOString()}</p>;
+        break;
+
+      case 'system':
+        res = (
+          <div className="space-y-1 text-xs text-neutral-300 font-mono">
+            <p className="text-cyan-400 font-bold">Telemetry Report:</p>
+            <p>• Framework: Next.js 16 (App Router + Turbopack)</p>
+            <p>• Engine: React 19 + TypeScript</p>
+            <p>• Styling: Tailwind CSS v4</p>
+            <p>• Linter: Oxlint (Rust)</p>
+            <p>• Prerendered Routes: 21 (SSG)</p>
+            <p>• Status: 100% Verified Production Build</p>
           </div>
         );
         break;

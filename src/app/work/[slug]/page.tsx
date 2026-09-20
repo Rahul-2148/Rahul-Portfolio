@@ -108,6 +108,41 @@ export default async function ProjectCaseStudyPage({
         </div>
       </div>
 
+      {/* Interactive Architecture Section (if available) */}
+      {project.architecture && project.architecture.length > 0 && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 text-cyan-400 text-xs font-mono uppercase tracking-wider">
+            <Cpu className="w-4 h-4" />
+            <span>Distributed System Topology</span>
+          </div>
+          <h2 className="text-2xl font-bold text-white tracking-tight">
+            Component Architecture &amp; Service Boundaries
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {project.architecture.map((node) => (
+              <div
+                key={node.id}
+                className="p-5 rounded-2xl bg-[#090910] border border-white/[0.08] hover:border-cyan-500/30 space-y-3 transition-all"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono text-cyan-300 font-bold uppercase">{node.label}</span>
+                  <span className="px-2 py-0.5 rounded bg-white/5 text-[10px] font-mono text-neutral-400 uppercase">
+                    {node.type}
+                  </span>
+                </div>
+                <p className="text-xs font-mono text-neutral-500">{node.technology}</p>
+                <p className="text-xs text-neutral-300 leading-relaxed">{node.description}</p>
+                {node.connections && node.connections.length > 0 && (
+                  <div className="pt-2 border-t border-white/5 text-[10px] font-mono text-neutral-500">
+                    Connects to: {node.connections.join(', ')}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Features & Engineered Capabilities */}
       {project.features && (
         <div className="space-y-6">
