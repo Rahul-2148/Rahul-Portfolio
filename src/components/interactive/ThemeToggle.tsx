@@ -61,9 +61,10 @@ export function ThemeToggle() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-popover text-popover-foreground border border-border shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150 font-mono text-xs">
-          <div className="px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border mb-1">
-            Color Themes
+        <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-popover text-popover-foreground border border-border shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150 font-mono text-xs">
+          <div className="flex items-center justify-between px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border mb-1">
+            <span>Aesthetic Design Themes</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface border border-border">6 Presets</span>
           </div>
 
           <div className="space-y-1">
@@ -79,16 +80,24 @@ export function ThemeToggle() {
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
                     <span
-                      className="w-3 h-3 rounded-full shrink-0 shadow-xs"
+                      className="w-3.5 h-3.5 rounded-full shrink-0 shadow-xs border border-white/20"
                       style={{ backgroundColor: theme.primaryColor }}
                     />
-                    <div className="flex flex-col">
-                      <span className="text-xs">{theme.name}</span>
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs truncate">{theme.name}</span>
+                        <span className="text-[9px] px-1 py-0.2 rounded bg-surface border border-border text-muted-foreground">
+                          {theme.motif}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground/80 truncate">
+                        {theme.motifDescription}
+                      </span>
                     </div>
                   </div>
-                  {isSelected && <Check className="w-3.5 h-3.5 text-primary" />}
+                  {isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0 ml-1" />}
                 </button>
               );
             })}

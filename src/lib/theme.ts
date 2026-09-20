@@ -10,6 +10,8 @@ export interface ThemeConfig {
   id: ThemeId;
   name: string;
   label: string;
+  motif: string;
+  motifDescription: string;
   mode: 'dark' | 'light';
   primaryColor: string;
   secondaryColor: string;
@@ -21,6 +23,8 @@ export const themes: ThemeConfig[] = [
     id: 'cyber-cyan',
     name: 'Cyber Cyan',
     label: 'Electric Cyan & Deep Cobalt',
+    motif: 'Cyber Blueprint',
+    motifDescription: 'Technical grid & HUD telemetry',
     mode: 'dark',
     primaryColor: '#00f0ff',
     secondaryColor: '#3b82f6',
@@ -30,6 +34,8 @@ export const themes: ThemeConfig[] = [
     id: 'synth-violet',
     name: 'Synth Violet',
     label: 'Neon Purple & Radiant Pink',
+    motif: 'Neon Aurora',
+    motifDescription: 'Organic mesh glow & starlight',
     mode: 'dark',
     primaryColor: '#a855f7',
     secondaryColor: '#ec4899',
@@ -39,6 +45,8 @@ export const themes: ThemeConfig[] = [
     id: 'matrix-emerald',
     name: 'Matrix Emerald',
     label: 'Cybernetic Terminal Green',
+    motif: 'Phosphor Matrix',
+    motifDescription: 'Terminal dot-matrix & scanlines',
     mode: 'dark',
     primaryColor: '#10b981',
     secondaryColor: '#06b6d4',
@@ -48,6 +56,8 @@ export const themes: ThemeConfig[] = [
     id: 'solar-amber',
     name: 'Solar Amber',
     label: 'High Voltage Gold & Flare',
+    motif: 'Industrial CAD',
+    motifDescription: 'Drafting hatched linework & spotlight',
     mode: 'dark',
     primaryColor: '#f59e0b',
     secondaryColor: '#f97316',
@@ -57,6 +67,8 @@ export const themes: ThemeConfig[] = [
     id: 'crimson-overdrive',
     name: 'Crimson Overdrive',
     label: 'High Performance Neon Red',
+    motif: 'Kinetic Circuit',
+    motifDescription: 'Angular traces & energy rim',
     mode: 'dark',
     primaryColor: '#ff2a5f',
     secondaryColor: '#fb923c',
@@ -66,6 +78,8 @@ export const themes: ThemeConfig[] = [
     id: 'studio-light',
     name: 'Studio Light',
     label: 'Clean Editorial Studio White',
+    motif: 'Swiss Minimalist',
+    motifDescription: 'Architectural dot-grid & crosshairs',
     mode: 'light',
     primaryColor: '#0066cc',
     secondaryColor: '#0284c7',

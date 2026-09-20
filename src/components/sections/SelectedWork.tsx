@@ -66,7 +66,7 @@ export function SelectedWork() {
           return (
             <div
               key={project.slug}
-              className={`group relative rounded-2xl border transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-lg ${
+              className={`group relative rounded-2xl border transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-lg card-ambient-glow ${
                 isFlagship
                   ? 'bg-card border-border-accent hover:border-primary shadow-xl'
                   : 'bg-card border-border hover:border-border-accent'
