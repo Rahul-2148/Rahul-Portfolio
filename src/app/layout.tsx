@@ -1,0 +1,90 @@
+import type { Metadata } from 'next';
+import '@/styles/globals.css';
+import { Navigation } from '@/components/layout/Navigation';
+import { Footer } from '@/components/layout/Footer';
+import { ClientShell } from '@/components/providers/ClientShell';
+import { personalInfo } from '@/lib/data/portfolio';
+
+export const metadata: Metadata = {
+  title: {
+    default: `${personalInfo.name} — ${personalInfo.role}`,
+    template: `%s | ${personalInfo.name}`,
+  },
+  description: personalInfo.bio,
+  keywords: [
+    'Rahul Raj',
+    'Full-Stack Engineer',
+    'Software Architect',
+    'React',
+    'Next.js',
+    'TypeScript',
+    'Node.js',
+    'MongoDB',
+    'Socket.IO',
+    'AI Engineer',
+    'Real-time Systems',
+  ],
+  authors: [{ name: personalInfo.name }],
+  creator: personalInfo.name,
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    siteName: `${personalInfo.name} — Engineering Portfolio`,
+    title: `${personalInfo.name} — ${personalInfo.role}`,
+    description: personalInfo.bio,
+    url: 'https://rahul-portfolio.vercel.app',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${personalInfo.name} — ${personalInfo.role}`,
+    description: personalInfo.bio,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en" className="dark">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Person',
+              name: personalInfo.name,
+              url: 'https://rahul-portfolio.vercel.app',
+              jobTitle: personalInfo.role,
+              description: personalInfo.bio,
+              sameAs: [personalInfo.github],
+            }),
+          }}
+        />
+      </head>
+      <body className="bg-[#050508] text-neutral-200 antialiased selection:bg-cyan-500/20 selection:text-cyan-200">
+        <ClientShell>
+          <Navigation />
+          <main className="min-h-screen pt-20">{children}</main>
+          <Footer />
+        </ClientShell>
+      </body>
+    </html>
+  );
+}
