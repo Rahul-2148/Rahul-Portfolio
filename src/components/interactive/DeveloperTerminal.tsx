@@ -18,8 +18,8 @@ export function DeveloperTerminal() {
       command: 'init',
       response: (
         <div className="space-y-1">
-          <p className="text-cyan-400 font-bold">Rahul Raj [Full-Stack + Real-Time + AI Systems v2.5]</p>
-          <p className="text-neutral-400">Type <span className="text-amber-400">help</span> to list available commands. Press ESC or close to exit.</p>
+          <p className="text-primary font-bold">Rahul Raj [Full-Stack + Real-Time + AI Systems v2.5]</p>
+          <p className="text-muted-foreground">Type <span className="text-amber-500 font-semibold">help</span> to list available commands. Press ESC or close to exit.</p>
         </div>
       ),
     },
@@ -58,20 +58,20 @@ export function DeveloperTerminal() {
       case 'help':
         res = (
           <div className="space-y-1 text-sm">
-            <p className="text-neutral-300 font-semibold mb-1">Available commands:</p>
+            <p className="text-foreground font-semibold mb-1">Available commands:</p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-              <div><span className="text-cyan-400 font-mono">about</span> — Engineering bio & philosophy</div>
-              <div><span className="text-cyan-400 font-mono">projects</span> — Flagship & featured systems</div>
-              <div><span className="text-cyan-400 font-mono">architecture</span> — High-level distributed blueprint</div>
-              <div><span className="text-cyan-400 font-mono">skills</span> — Verified tech stack & proficiencies</div>
-              <div><span className="text-cyan-400 font-mono">system</span> — Architecture telemetry & engine</div>
-              <div><span className="text-cyan-400 font-mono">whoami</span> — Current session credentials</div>
-              <div><span className="text-cyan-400 font-mono">date</span> — System ISO timestamp</div>
-              <div><span className="text-cyan-400 font-mono">contact</span> — Get direct contact links</div>
-              <div><span className="text-cyan-400 font-mono">github</span> — Open GitHub in browser</div>
-              <div><span className="text-cyan-400 font-mono">theme</span> — Switch color theme tokens (cyber-cyan, synth-violet, matrix-emerald, solar-amber, crimson-overdrive)</div>
-              <div><span className="text-cyan-400 font-mono">clear</span> — Clear the terminal screen</div>
-              <div><span className="text-cyan-400 font-mono">exit</span> — Close developer terminal</div>
+              <div><span className="text-primary font-mono">about</span> — Engineering bio & philosophy</div>
+              <div><span className="text-primary font-mono">projects</span> — Flagship & featured systems</div>
+              <div><span className="text-primary font-mono">architecture</span> — High-level distributed blueprint</div>
+              <div><span className="text-primary font-mono">skills</span> — Verified tech stack & proficiencies</div>
+              <div><span className="text-primary font-mono">system</span> — Architecture telemetry & engine</div>
+              <div><span className="text-primary font-mono">whoami</span> — Current session credentials</div>
+              <div><span className="text-primary font-mono">date</span> — System ISO timestamp</div>
+              <div><span className="text-primary font-mono">contact</span> — Get direct contact links</div>
+              <div><span className="text-primary font-mono">github</span> — Open GitHub in browser</div>
+              <div><span className="text-primary font-mono">theme</span> — Switch color theme tokens (cyber-cyan, synth-violet, matrix-emerald, solar-amber, crimson-overdrive, studio-light)</div>
+              <div><span className="text-primary font-mono">clear</span> — Clear the terminal screen</div>
+              <div><span className="text-primary font-mono">exit</span> — Close developer terminal</div>
             </div>
           </div>
         );
@@ -79,8 +79,8 @@ export function DeveloperTerminal() {
 
       case 'about':
         res = (
-          <div className="space-y-1 text-neutral-300 text-xs leading-relaxed">
-            <p className="text-cyan-300 font-semibold">Rahul Raj — Full-Stack Engineer</p>
+          <div className="space-y-1 text-muted-foreground text-xs leading-relaxed">
+            <p className="text-primary font-semibold">Rahul Raj — Full-Stack Engineer</p>
             <p>Passionate about building production-grade digital products where thoughtful interfaces meet robust distributed systems.</p>
             <p>Specializes in Next.js, Node.js, Socket.IO real-time pipelines, MongoDB clustering, and AI provider integrations.</p>
           </div>
@@ -91,13 +91,13 @@ export function DeveloperTerminal() {
         res = (
           <div className="space-y-2 text-xs">
             {projects.slice(0, 4).map((p) => (
-              <div key={p.slug} className="border-l-2 border-cyan-500/50 pl-2">
-                <span className="font-bold text-white">{p.name}</span>{' '}
-                <span className="text-[10px] px-1.5 py-0.2 bg-cyan-500/20 text-cyan-300 rounded font-mono">
+              <div key={p.slug} className="border-l-2 border-border-accent pl-2">
+                <span className="font-bold text-foreground">{p.name}</span>{' '}
+                <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary border border-border-accent/40 rounded font-mono">
                   {p.category}
                 </span>
-                <p className="text-neutral-400 mt-0.5">{p.tagline}</p>
-                <p className="text-neutral-500 text-[11px]">{p.technologies.slice(0, 5).join(' • ')}</p>
+                <p className="text-muted-foreground mt-0.5">{p.tagline}</p>
+                <p className="text-muted-foreground/70 text-[11px]">{p.technologies.slice(0, 5).join(' • ')}</p>
               </div>
             ))}
           </div>
@@ -106,8 +106,8 @@ export function DeveloperTerminal() {
 
       case 'architecture':
         res = (
-          <div className="font-mono text-xs text-neutral-300 space-y-1 bg-black/40 p-2 rounded border border-white/5">
-            <p className="text-amber-400 font-bold">Multi-Service System Architecture Pattern:</p>
+          <div className="font-mono text-xs text-foreground space-y-1 bg-surface p-2.5 rounded border border-border">
+            <p className="text-primary font-bold">Multi-Service System Architecture Pattern:</p>
             <p>[Client Storefront / Consoles] ──(HTTP/WS)──&gt; [Gateway API &amp; Socket Hub]</p>
             <p>&nbsp;&nbsp;├── [RBAC &amp; JWT Middleware] ──&gt; [Controller &amp; Services]</p>
             <p>&nbsp;&nbsp;├── [MongoDB Atlas] ── Index-optimized transactions</p>
@@ -120,10 +120,10 @@ export function DeveloperTerminal() {
       case 'skills':
         res = (
           <div className="space-y-1 text-xs">
-            <p className="text-cyan-400 font-semibold">Verified Technical Proficiencies:</p>
+            <p className="text-primary font-semibold">Verified Technical Proficiencies:</p>
             <div className="flex flex-wrap gap-1.5 mt-1">
               {skills.map((s) => (
-                <span key={s.name} className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-neutral-300 font-mono text-[11px]">
+                <span key={s.name} className="px-2 py-0.5 bg-surface border border-border rounded text-foreground font-mono text-[11px]">
                   {s.name}
                 </span>
               ))}
@@ -134,35 +134,35 @@ export function DeveloperTerminal() {
 
       case 'contact':
         res = (
-          <div className="space-y-1 text-xs text-neutral-300">
-            <p><span className="text-neutral-500 font-mono">Email:</span> <a href={`mailto:${personalInfo.email}`} className="text-cyan-400 hover:underline">{personalInfo.email}</a></p>
-            <p><span className="text-neutral-500 font-mono">GitHub:</span> <a href={personalInfo.github} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline">{personalInfo.github}</a></p>
-            <p><span className="text-neutral-500 font-mono">Status:</span> <span className="text-emerald-400">Available for Opportunities</span></p>
+          <div className="space-y-1 text-xs text-foreground">
+            <p><span className="text-muted-foreground font-mono">Email:</span> <a href={`mailto:${personalInfo.email}`} className="text-primary hover:underline">{personalInfo.email}</a></p>
+            <p><span className="text-muted-foreground font-mono">GitHub:</span> <a href={personalInfo.github} target="_blank" rel="noreferrer" className="text-primary hover:underline">{personalInfo.github}</a></p>
+            <p><span className="text-muted-foreground font-mono">Status:</span> <span className="text-emerald-500 dark:text-emerald-400 font-semibold">Available for Opportunities</span></p>
           </div>
         );
         break;
 
       case 'whoami':
         res = (
-          <p className="text-xs text-neutral-300">
+          <p className="text-xs text-muted-foreground">
             guest@rahul-portfolio (visitor session: recruiter/engineer). Full access granted upon hiring.
           </p>
         );
         break;
 
       case 'date':
-        res = <p className="text-xs font-mono text-cyan-300">{new Date().toISOString()}</p>;
+        res = <p className="text-xs font-mono text-primary">{new Date().toISOString()}</p>;
         break;
 
       case 'system':
         res = (
-          <div className="space-y-1 text-xs text-neutral-300 font-mono">
-            <p className="text-cyan-400 font-bold">Telemetry Report:</p>
+          <div className="space-y-1 text-xs text-muted-foreground font-mono">
+            <p className="text-primary font-bold">Telemetry Report:</p>
             <p>• Framework: Next.js 16 (App Router + Turbopack)</p>
             <p>• Engine: React 19 + TypeScript</p>
-            <p>• Styling: Tailwind CSS v4</p>
+            <p>• Styling: Tailwind CSS v4 Semantic Tokens</p>
             <p>• Linter: Oxlint (Rust)</p>
-            <p>• Prerendered Routes: 21 (SSG)</p>
+            <p>• Prerendered Routes: 23 (SSG)</p>
             <p>• Status: 100% Verified Production Build</p>
           </div>
         );
@@ -170,7 +170,7 @@ export function DeveloperTerminal() {
 
       case 'github':
         window.open(personalInfo.github, '_blank', 'noopener,noreferrer');
-        res = <p className="text-xs text-cyan-400">Opening {personalInfo.github} in new tab...</p>;
+        res = <p className="text-xs text-primary">Opening {personalInfo.github} in new tab...</p>;
         break;
 
       case 'clear':
@@ -184,7 +184,7 @@ export function DeveloperTerminal() {
         return;
 
       case 'sudo':
-        res = <p className="text-xs text-rose-400">Permission denied: You are a guest in Rahul&apos;s workspace. Full access granted upon hiring.</p>;
+        res = <p className="text-xs text-destructive">Permission denied: You are a guest in Rahul&apos;s workspace. Full access granted upon hiring.</p>;
         break;
 
       default:
@@ -194,34 +194,34 @@ export function DeveloperTerminal() {
           if (!targetTheme || targetTheme === 'list') {
             res = (
               <div className="space-y-1 text-xs font-mono">
-                <p className="text-cyan-400 font-bold">Available Design Token Themes:</p>
+                <p className="text-primary font-bold">Available Design Token Themes:</p>
                 {themes.map((t) => (
                   <div key={t.id}>
-                    <span className="text-white font-bold">{t.id}</span> — {t.name} ({t.label})
+                    <span className="text-foreground font-bold">{t.id}</span> — {t.name} ({t.label})
                   </div>
                 ))}
-                <p className="text-neutral-400 mt-1">Usage: theme &lt;theme-id&gt; (e.g. theme synth-violet)</p>
+                <p className="text-muted-foreground mt-1">Usage: theme &lt;theme-id&gt; (e.g. theme synth-violet)</p>
               </div>
             );
           } else if (themes.some((t) => t.id === targetTheme)) {
             setTheme(targetTheme as ThemeId);
             res = (
-              <p className="text-xs font-mono text-emerald-400">
+              <p className="text-xs font-mono text-emerald-500 dark:text-emerald-400">
                 Switched color design tokens to: <span className="font-bold">{targetTheme}</span>
               </p>
             );
           } else {
             res = (
-              <p className="text-xs text-rose-400">
-                Unknown theme &apos;{targetTheme}&apos;. Type <span className="text-amber-400">theme list</span> to view valid themes.
+              <p className="text-xs text-destructive">
+                Unknown theme &apos;{targetTheme}&apos;. Type <span className="text-primary font-bold">theme list</span> to view valid themes.
               </p>
             );
           }
           break;
         }
         res = (
-          <p className="text-xs text-rose-400">
-            Command not recognized: &apos;{trimmed}&apos;. Type <span className="text-amber-400 font-bold">help</span> for available commands.
+          <p className="text-xs text-destructive">
+            Command not recognized: &apos;{trimmed}&apos;. Type <span className="text-primary font-bold">help</span> for available commands.
           </p>
         );
     }
@@ -258,17 +258,17 @@ export function DeveloperTerminal() {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-[9990] w-full max-w-xl max-h-[85vh] flex flex-col bg-[#0b0b12] border border-cyan-500/30 rounded-2xl shadow-2xl overflow-hidden font-mono text-neutral-200 animate-in slide-in-from-bottom-5 duration-200">
+    <div className="fixed bottom-6 right-6 z-[9990] w-full max-w-xl max-h-[85vh] flex flex-col bg-card/95 backdrop-blur-xl border border-border-accent rounded-2xl shadow-2xl overflow-hidden font-mono text-foreground animate-in slide-in-from-bottom-5 duration-200">
       {/* Terminal Title Bar */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-[#12121c] border-b border-white/10 select-none">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-surface-elevated border-b border-border select-none">
         <div className="flex items-center gap-2">
-          <TerminalIcon className="w-4 h-4 text-cyan-400" />
-          <span className="text-xs font-semibold text-neutral-300">rahul@workspace: ~</span>
+          <TerminalIcon className="w-4 h-4 text-primary" />
+          <span className="text-xs font-semibold text-foreground">rahul@workspace: ~</span>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsOpen(false)}
-            className="p-1 text-neutral-400 hover:text-white rounded hover:bg-white/10"
+            className="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted transition-colors"
             title="Close"
           >
             <X className="w-3.5 h-3.5" />
@@ -280,7 +280,7 @@ export function DeveloperTerminal() {
       <div className="flex-1 p-4 overflow-y-auto space-y-3 max-h-[380px] text-xs">
         {history.map((item, idx) => (
           <div key={idx} className="space-y-1">
-            <div className="flex items-center gap-2 text-cyan-400/90 font-bold">
+            <div className="flex items-center gap-2 text-primary font-bold">
               <span>❯</span>
               <span>{item.command}</span>
             </div>
@@ -291,8 +291,8 @@ export function DeveloperTerminal() {
       </div>
 
       {/* Terminal Input Line */}
-      <div className="flex items-center gap-2 px-4 py-2.5 bg-[#0e0e16] border-t border-white/10">
-        <span className="text-cyan-400 font-bold text-sm">❯</span>
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-surface border-t border-border">
+        <span className="text-primary font-bold text-sm">❯</span>
         <input
           ref={inputRef}
           type="text"
@@ -300,11 +300,11 @@ export function DeveloperTerminal() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="type a command..."
-          className="w-full bg-transparent text-white focus:outline-none text-xs font-mono"
+          className="w-full bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none text-xs font-mono"
         />
         <button
           onClick={() => handleCommand(input)}
-          className="text-neutral-500 hover:text-cyan-400 p-1"
+          className="text-muted-foreground hover:text-primary p-1 transition-colors"
           title="Execute"
         >
           <CornerDownLeft className="w-3.5 h-3.5" />

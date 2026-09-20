@@ -1,127 +1,241 @@
 @import "tailwindcss";
 
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-accent: var(--border-accent);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
 @layer base {
   /* ====================================================
-     DEFAULT DESIGN TOKENS (Cyber Cyan)
+     DEFAULT THEME: Cyber Cyan (Dark Obsidian)
      ==================================================== */
   :root,
   [data-theme="cyber-cyan"] {
-    --bg-base: #050508;
-    --bg-surface: #0a0b12;
-    --bg-card: rgba(14, 16, 26, 0.75);
-    --bg-card-hover: rgba(20, 24, 38, 0.9);
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-accent: rgba(0, 240, 255, 0.35);
-    --border-accent-strong: #00f0ff;
-    --accent-primary: #00f0ff;
-    --accent-secondary: #3b82f6;
-    --accent-rgb: 0, 240, 255;
-    --accent-glow: 0 0 35px -5px rgba(0, 240, 255, 0.3);
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
-
-    /* shadcn/ui token bindings */
-    --background: var(--bg-base);
-    --foreground: var(--text-primary);
-    --card: var(--bg-card);
-    --card-foreground: var(--text-primary);
-    --popover: var(--bg-surface);
-    --popover-foreground: var(--text-primary);
-    --primary: var(--accent-primary);
+    --background: #050508;
+    --surface: #0a0b12;
+    --surface-elevated: #11121d;
+    --card: rgba(14, 16, 26, 0.78);
+    --card-hover: rgba(22, 26, 42, 0.9);
+    --card-foreground: #f8fafc;
+    --foreground: #f8fafc;
+    --popover: #0c0d16;
+    --popover-foreground: #f8fafc;
+    --primary: #00f0ff;
     --primary-foreground: #000000;
     --secondary: rgba(255, 255, 255, 0.06);
-    --secondary-foreground: var(--text-primary);
+    --secondary-foreground: #f8fafc;
     --muted: rgba(255, 255, 255, 0.04);
-    --muted-foreground: var(--text-secondary);
-    --accent: rgba(var(--accent-rgb), 0.15);
-    --accent-foreground: var(--accent-primary);
+    --muted-foreground: #94a3b8;
+    --accent: rgba(0, 240, 255, 0.12);
+    --accent-foreground: #00f0ff;
+    --accent-secondary: #3b82f6;
+    --accent-rgb: 0, 240, 255;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    --border-accent: rgba(0, 240, 255, 0.35);
+    --border-accent-strong: #00f0ff;
+    --input: rgba(255, 255, 255, 0.1);
+    --ring: #00f0ff;
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
-    --border: var(--border-subtle);
-    --input: rgba(255, 255, 255, 0.1);
-    --ring: var(--accent-primary);
     --radius: 0.75rem;
+    --accent-glow: 0 0 35px -5px rgba(0, 240, 255, 0.3);
   }
 
   /* ====================================================
-     THEME: Synth Violet (Neon Tokyo Purple)
+     THEME: Synth Violet (Tokyo Neon Purple)
      ==================================================== */
   [data-theme="synth-violet"] {
-    --bg-base: #07050e;
-    --bg-surface: #0e091c;
-    --bg-card: rgba(22, 14, 38, 0.75);
-    --bg-card-hover: rgba(30, 20, 52, 0.9);
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-accent: rgba(168, 85, 247, 0.35);
-    --border-accent-strong: #a855f7;
-    --accent-primary: #a855f7;
+    --background: #07050e;
+    --surface: #0e0a1c;
+    --surface-elevated: #18112e;
+    --card: rgba(22, 14, 38, 0.78);
+    --card-hover: rgba(34, 22, 58, 0.9);
+    --card-foreground: #faf5ff;
+    --foreground: #faf5ff;
+    --popover: #120c24;
+    --popover-foreground: #faf5ff;
+    --primary: #a855f7;
+    --primary-foreground: #ffffff;
+    --secondary: rgba(255, 255, 255, 0.06);
+    --secondary-foreground: #faf5ff;
+    --muted: rgba(255, 255, 255, 0.04);
+    --muted-foreground: #c084fc;
+    --accent: rgba(168, 85, 247, 0.14);
+    --accent-foreground: #a855f7;
     --accent-secondary: #ec4899;
     --accent-rgb: 168, 85, 247;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    --border-accent: rgba(168, 85, 247, 0.35);
+    --border-accent-strong: #a855f7;
+    --input: rgba(255, 255, 255, 0.1);
+    --ring: #a855f7;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --radius: 0.75rem;
     --accent-glow: 0 0 35px -5px rgba(168, 85, 247, 0.3);
-    --text-primary: #faf5ff;
-    --text-secondary: #c084fc;
-    --text-muted: #7e22ce;
   }
 
   /* ====================================================
-     THEME: Matrix Emerald (Cyber Hacker Terminal)
+     THEME: Matrix Emerald (Hacker Terminal Green)
      ==================================================== */
   [data-theme="matrix-emerald"] {
-    --bg-base: #030805;
-    --bg-surface: #07130b;
-    --bg-card: rgba(10, 25, 17, 0.75);
-    --bg-card-hover: rgba(15, 36, 25, 0.9);
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-accent: rgba(16, 185, 129, 0.35);
-    --border-accent-strong: #10b981;
-    --accent-primary: #10b981;
+    --background: #030805;
+    --surface: #07140c;
+    --surface-elevated: #0d2215;
+    --card: rgba(10, 25, 17, 0.78);
+    --card-hover: rgba(16, 38, 26, 0.9);
+    --card-foreground: #f0fdf4;
+    --foreground: #f0fdf4;
+    --popover: #08170d;
+    --popover-foreground: #f0fdf4;
+    --primary: #10b981;
+    --primary-foreground: #000000;
+    --secondary: rgba(255, 255, 255, 0.06);
+    --secondary-foreground: #f0fdf4;
+    --muted: rgba(255, 255, 255, 0.04);
+    --muted-foreground: #86efac;
+    --accent: rgba(16, 185, 129, 0.14);
+    --accent-foreground: #10b981;
     --accent-secondary: #06b6d4;
     --accent-rgb: 16, 185, 129;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    --border-accent: rgba(16, 185, 129, 0.35);
+    --border-accent-strong: #10b981;
+    --input: rgba(255, 255, 255, 0.1);
+    --ring: #10b981;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --radius: 0.75rem;
     --accent-glow: 0 0 35px -5px rgba(16, 185, 129, 0.3);
-    --text-primary: #f0fdf4;
-    --text-secondary: #86efac;
-    --text-muted: #15803d;
   }
 
   /* ====================================================
      THEME: Solar Amber (High Voltage Radiant Gold)
      ==================================================== */
   [data-theme="solar-amber"] {
-    --bg-base: #090704;
-    --bg-surface: #140e08;
-    --bg-card: rgba(28, 20, 12, 0.75);
-    --bg-card-hover: rgba(40, 28, 16, 0.9);
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-accent: rgba(245, 158, 11, 0.35);
-    --border-accent-strong: #f59e0b;
-    --accent-primary: #f59e0b;
+    --background: #090704;
+    --surface: #140e08;
+    --surface-elevated: #22180e;
+    --card: rgba(28, 20, 12, 0.78);
+    --card-hover: rgba(42, 30, 18, 0.9);
+    --card-foreground: #fffbeb;
+    --foreground: #fffbeb;
+    --popover: #160f09;
+    --popover-foreground: #fffbeb;
+    --primary: #f59e0b;
+    --primary-foreground: #000000;
+    --secondary: rgba(255, 255, 255, 0.06);
+    --secondary-foreground: #fffbeb;
+    --muted: rgba(255, 255, 255, 0.04);
+    --muted-foreground: #fcd34d;
+    --accent: rgba(245, 158, 11, 0.14);
+    --accent-foreground: #f59e0b;
     --accent-secondary: #f97316;
     --accent-rgb: 245, 158, 11;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    --border-accent: rgba(245, 158, 11, 0.35);
+    --border-accent-strong: #f59e0b;
+    --input: rgba(255, 255, 255, 0.1);
+    --ring: #f59e0b;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --radius: 0.75rem;
     --accent-glow: 0 0 35px -5px rgba(245, 158, 11, 0.3);
-    --text-primary: #fffbeb;
-    --text-secondary: #fcd34d;
-    --text-muted: #b45309;
   }
 
   /* ====================================================
-     THEME: Crimson Overdrive (High Performance Neon Red)
+     THEME: Crimson Overdrive (Neon Performance Red)
      ==================================================== */
   [data-theme="crimson-overdrive"] {
-    --bg-base: #090305;
-    --bg-surface: #14070c;
-    --bg-card: rgba(28, 12, 19, 0.75);
-    --bg-card-hover: rgba(40, 18, 28, 0.9);
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-accent: rgba(255, 42, 95, 0.35);
-    --border-accent-strong: #ff2a5f;
-    --accent-primary: #ff2a5f;
+    --background: #090305;
+    --surface: #14070c;
+    --surface-elevated: #240c15;
+    --card: rgba(28, 12, 19, 0.78);
+    --card-hover: rgba(42, 18, 28, 0.9);
+    --card-foreground: #fff1f2;
+    --foreground: #fff1f2;
+    --popover: #17070e;
+    --popover-foreground: #fff1f2;
+    --primary: #ff2a5f;
+    --primary-foreground: #ffffff;
+    --secondary: rgba(255, 255, 255, 0.06);
+    --secondary-foreground: #fff1f2;
+    --muted: rgba(255, 255, 255, 0.04);
+    --muted-foreground: #fda4af;
+    --accent: rgba(255, 42, 95, 0.14);
+    --accent-foreground: #ff2a5f;
     --accent-secondary: #fb923c;
     --accent-rgb: 255, 42, 95;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    --border-accent: rgba(255, 42, 95, 0.35);
+    --border-accent-strong: #ff2a5f;
+    --input: rgba(255, 255, 255, 0.1);
+    --ring: #ff2a5f;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --radius: 0.75rem;
     --accent-glow: 0 0 35px -5px rgba(255, 42, 95, 0.3);
-    --text-primary: #fff1f2;
-    --text-secondary: #fda4af;
-    --text-muted: #be123c;
+  }
+
+  /* ====================================================
+     THEME: Studio Light (Clean Editorial White / Linear Style)
+     ==================================================== */
+  [data-theme="studio-light"] {
+    --background: #f8fafc;
+    --surface: #ffffff;
+    --surface-elevated: #f1f5f9;
+    --card: rgba(255, 255, 255, 0.92);
+    --card-hover: #ffffff;
+    --card-foreground: #0f172a;
+    --foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --primary: #0066cc;
+    --primary-foreground: #ffffff;
+    --secondary: #f1f5f9;
+    --secondary-foreground: #0f172a;
+    --muted: #f1f5f9;
+    --muted-foreground: #475569;
+    --accent: rgba(0, 102, 204, 0.08);
+    --accent-foreground: #0066cc;
+    --accent-secondary: #0284c7;
+    --accent-rgb: 0, 102, 204;
+    --border: #e2e8f0;
+    --border-subtle: #edf2f7;
+    --border-accent: rgba(0, 102, 204, 0.4);
+    --border-accent-strong: #0066cc;
+    --input: #e2e8f0;
+    --ring: #0066cc;
+    --destructive: #dc2626;
+    --destructive-foreground: #ffffff;
+    --radius: 0.75rem;
+    --accent-glow: 0 4px 25px -4px rgba(0, 102, 204, 0.15);
   }
 
   * {
@@ -132,24 +246,23 @@
 
   html {
     scroll-behavior: smooth;
-    color-scheme: dark;
-    background-color: var(--bg-base);
-    color: var(--text-primary);
+    background-color: var(--background);
+    color: var(--foreground);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
   }
 
   body {
-    background-color: var(--bg-base);
-    color: var(--text-primary);
+    background-color: var(--background);
+    color: var(--foreground);
     min-height: 100vh;
     overflow-x: hidden;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
 
   ::selection {
-    background: rgba(var(--accent-rgb), 0.3);
-    color: #ffffff;
+    background: rgba(var(--accent-rgb), 0.25);
+    color: var(--foreground);
   }
 }
 
@@ -160,68 +273,22 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-base);
+  background: var(--background);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(var(--accent-rgb), 0.3);
+  background: rgba(var(--accent-rgb), 0.25);
   border-radius: 9999px;
   transition: background 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-primary);
+  background: var(--primary);
 }
 
-/* Token-based design primitives */
-.bg-theme-base {
-  background-color: var(--bg-base);
-}
-
-.bg-theme-surface {
-  background-color: var(--bg-surface);
-}
-
-.bg-theme-card {
-  background-color: var(--bg-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
-.border-theme-subtle {
-  border-color: var(--border-subtle);
-}
-
-.border-theme-accent {
-  border-color: var(--border-accent);
-}
-
-.text-theme-accent {
-  color: var(--accent-primary);
-}
-
-.text-theme-secondary {
-  color: var(--text-secondary);
-}
-
-.text-theme-muted {
-  color: var(--text-muted);
-}
-
-.bg-theme-accent {
-  background-color: var(--accent-primary);
-}
-
-.shadow-theme-glow {
-  box-shadow: var(--accent-glow);
-}
-
+/* Semantic Utility Classes */
 .gradient-theme-text {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  background: linear-gradient(135deg, var(--primary), var(--accent-secondary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-}
-
-.gradient-theme-border {
-  border-image: linear-gradient(to right, transparent, var(--accent-primary), transparent) 1;
 }

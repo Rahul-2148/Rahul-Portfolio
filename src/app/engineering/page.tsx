@@ -22,14 +22,14 @@ export default function EngineeringPage() {
     <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-20">
       {/* Header */}
       <div className="max-w-3xl space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-mono">
-          <Cpu className="w-3.5 h-3.5" />
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent border border-border-accent text-accent-foreground text-xs font-mono">
+          <Cpu className="w-3.5 h-3.5 text-primary" />
           <span>Core Engineering Philosophy</span>
         </div>
-        <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight">
+        <h1 className="text-4xl sm:text-6xl font-black text-foreground tracking-tight">
           System Architecture &amp; Engineering Domains
         </h1>
-        <p className="text-neutral-400 text-base sm:text-lg leading-relaxed">
+        <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
           Building resilient, observable, and performant software requires more than picking frameworks. It requires deep respect for data lifecycle, asynchronous execution models, and clear architectural boundaries.
         </p>
       </div>
@@ -41,38 +41,38 @@ export default function EngineeringPage() {
           return (
             <div
               key={domain.title}
-              className="bg-[#090910] border border-white/[0.08] hover:border-cyan-500/30 rounded-2xl p-6 sm:p-8 space-y-6 transition-all"
+              className="bg-card border border-border hover:border-border-accent rounded-2xl p-6 sm:p-8 space-y-6 transition-all shadow-sm"
             >
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400">
+                <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
                   <Icon className="w-5 h-5" />
                 </div>
-                <h3 className="text-xl font-bold text-white tracking-tight">{domain.title}</h3>
+                <h3 className="text-xl font-bold text-foreground tracking-tight">{domain.title}</h3>
               </div>
 
-              <p className="text-sm text-neutral-400 leading-relaxed">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 {domain.description}
               </p>
 
               <div className="space-y-2">
-                <span className="text-[11px] font-mono uppercase tracking-wider text-neutral-500 block">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground block">
                   Core Principles &amp; Patterns:
                 </span>
-                <ul className="space-y-1.5 text-xs text-neutral-300 font-mono">
+                <ul className="space-y-1.5 text-xs text-foreground font-mono">
                   {domain.highlights.map((item, idx) => (
                     <li key={idx} className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                       <span>{item}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
-              <div className="border-t border-white/[0.06] pt-4 flex flex-wrap gap-1.5">
+              <div className="border-t border-border pt-4 flex flex-wrap gap-1.5">
                 {domain.technologies.map((t) => (
                   <span
                     key={t}
-                    className="px-2 py-0.5 rounded bg-white/[0.03] border border-white/[0.08] text-[11px] font-mono text-neutral-300"
+                    className="px-2 py-0.5 rounded bg-surface-elevated border border-border text-[11px] font-mono text-muted-foreground"
                   >
                     {t}
                   </span>
@@ -84,35 +84,35 @@ export default function EngineeringPage() {
       </div>
 
       {/* Interactive Tech Ecosystem Section */}
-      <div className="border-t border-white/[0.08] pt-12">
+      <div className="border-t border-border pt-12">
         <TechEcosystem />
       </div>
 
       {/* Production Guarantees */}
-      <div className="bg-[#0b0b14] border border-cyan-500/30 rounded-2xl p-8 sm:p-12 space-y-6">
-        <div className="flex items-center gap-2 text-cyan-400 text-xs font-mono uppercase tracking-wider">
+      <div className="bg-surface-elevated border border-border-accent rounded-2xl p-8 sm:p-12 space-y-6 shadow-lg">
+        <div className="flex items-center gap-2 text-primary text-xs font-mono uppercase tracking-wider font-semibold">
           <ShieldCheck className="w-4 h-4" />
           <span>Production Architecture Principles</span>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+        <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
           How I Approach Software Quality
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm text-neutral-300">
-          <div className="space-y-2 bg-white/[0.02] border border-white/[0.06] p-5 rounded-xl">
-            <h4 className="font-bold text-white">Strict Type Soundness</h4>
-            <p className="text-xs text-neutral-400 leading-relaxed">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm text-muted-foreground">
+          <div className="space-y-2 bg-surface border border-border p-5 rounded-xl shadow-xs">
+            <h4 className="font-bold text-foreground">Strict Type Soundness</h4>
+            <p className="text-xs text-muted-foreground leading-relaxed">
               End-to-end TypeScript interfaces with runtime validation via Zod at every API boundary to prevent corrupt data propagation.
             </p>
           </div>
-          <div className="space-y-2 bg-white/[0.02] border border-white/[0.06] p-5 rounded-xl">
-            <h4 className="font-bold text-white">Zero-Block Real-Time</h4>
-            <p className="text-xs text-neutral-400 leading-relaxed">
+          <div className="space-y-2 bg-surface border border-border p-5 rounded-xl shadow-xs">
+            <h4 className="font-bold text-foreground">Zero-Block Real-Time</h4>
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Decoupled WebSocket event loops using Redis pub/sub channels and room-scoped broadcasts to prevent node blocking.
             </p>
           </div>
-          <div className="space-y-2 bg-white/[0.02] border border-white/[0.06] p-5 rounded-xl">
-            <h4 className="font-bold text-white">Pragmatic AI Systems</h4>
-            <p className="text-xs text-neutral-400 leading-relaxed">
+          <div className="space-y-2 bg-surface border border-border p-5 rounded-xl shadow-xs">
+            <h4 className="font-bold text-foreground">Pragmatic AI Systems</h4>
+            <p className="text-xs text-muted-foreground leading-relaxed">
               AI integrated through strict provider abstractions with structured tools, fallback paths, and deterministic responses.
             </p>
           </div>

@@ -79,11 +79,11 @@ export default function RootLayout({
         />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('rahul-portfolio-theme')||'cyber-cyan';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('rahul-portfolio-theme')||'cyber-cyan';document.documentElement.setAttribute('data-theme',t);if(t==='studio-light'){document.documentElement.classList.remove('dark');document.documentElement.classList.add('light');}else{document.documentElement.classList.remove('light');document.documentElement.classList.add('dark');}}catch(e){}})();`,
           }}
         />
       </head>
-      <body className="bg-[var(--bg-base)] text-[var(--text-primary)] antialiased transition-colors duration-300">
+      <body className="bg-background text-foreground antialiased transition-colors duration-300">
         <ClientShell>
           <Navigation />
           <main className="min-h-screen pt-20">{children}</main>

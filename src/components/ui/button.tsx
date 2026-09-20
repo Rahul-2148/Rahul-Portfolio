@@ -4,22 +4,22 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent-primary)] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
         default:
-          'bg-[var(--accent-primary)] text-black font-semibold hover:opacity-90 shadow-md shadow-[var(--accent-primary)]/20 active:scale-[0.98]',
+          'bg-primary text-primary-foreground font-semibold hover:opacity-90 shadow-md shadow-primary/20 active:scale-[0.98]',
         destructive:
-          'bg-rose-600 text-white hover:bg-rose-700 shadow-sm active:scale-[0.98]',
+          'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm active:scale-[0.98]',
         outline:
-          'border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:text-white text-neutral-300 active:scale-[0.98]',
+          'border border-border bg-surface hover:bg-surface-elevated hover:text-foreground text-muted-foreground active:scale-[0.98]',
         secondary:
-          'bg-white/10 text-white hover:bg-white/15 active:scale-[0.98]',
+          'bg-secondary text-secondary-foreground hover:bg-secondary/80 active:scale-[0.98]',
         ghost:
-          'hover:bg-white/[0.06] text-neutral-300 hover:text-white',
+          'hover:bg-muted text-muted-foreground hover:text-foreground',
         link:
-          'text-[var(--accent-primary)] underline-offset-4 hover:underline',
+          'text-primary underline-offset-4 hover:underline',
       },
       size: {
         default: 'h-10 px-4 py-2',

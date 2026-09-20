@@ -217,15 +217,15 @@ export function CommandPalette() {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-start justify-center pt-24 px-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[9999] flex items-start justify-center pt-24 px-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
       <div
-        className="w-full max-w-2xl bg-[#0d0d14] border border-white/10 rounded-2xl shadow-2xl overflow-hidden text-neutral-200"
+        className="w-full max-w-2xl bg-popover border border-border rounded-2xl shadow-2xl overflow-hidden text-popover-foreground"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
         {/* Search header */}
-        <div className="flex items-center px-4 py-3.5 border-b border-white/10 gap-3">
-          <Search className="w-5 h-5 text-cyan-400 shrink-0" />
+        <div className="flex items-center px-4 py-3.5 border-b border-border gap-3">
+          <Search className="w-5 h-5 text-primary shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -235,11 +235,11 @@ export function CommandPalette() {
               setSearch(e.target.value);
               setSelectedIndex(0);
             }}
-            className="w-full bg-transparent text-white placeholder:text-neutral-500 text-sm focus:outline-none"
+            className="w-full bg-transparent text-foreground placeholder:text-muted-foreground text-sm focus:outline-none"
           />
           <button
             onClick={() => setIsOpen(false)}
-            className="text-neutral-500 hover:text-white p-1 rounded-md"
+            className="text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors"
             title="Close"
           >
             <X className="w-4 h-4" />
@@ -249,7 +249,7 @@ export function CommandPalette() {
         {/* Results */}
         <div className="max-h-96 overflow-y-auto p-2 space-y-1">
           {filtered.length === 0 ? (
-            <div className="p-8 text-center text-sm text-neutral-500">
+            <div className="p-8 text-center text-sm text-muted-foreground">
               No matching commands or routes found.
             </div>
           ) : (
@@ -263,15 +263,15 @@ export function CommandPalette() {
                   onMouseEnter={() => setSelectedIndex(idx)}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left text-sm transition-colors ${
                     isSelected
-                      ? 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/30'
-                      : 'hover:bg-white/5 text-neutral-300 border border-transparent'
+                      ? 'bg-primary/10 text-primary border border-border-accent'
+                      : 'hover:bg-muted text-foreground border border-transparent'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className={`w-4 h-4 ${isSelected ? 'text-cyan-400' : 'text-neutral-400'}`} />
+                    <Icon className={`w-4 h-4 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
                     <span className="font-medium">{item.label}</span>
                   </div>
-                  <span className="text-xs text-neutral-500 font-mono uppercase tracking-wider">
+                  <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
                     {item.category}
                   </span>
                 </button>
@@ -281,16 +281,16 @@ export function CommandPalette() {
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2.5 bg-[#08080c] border-t border-white/5 flex items-center justify-between text-xs text-neutral-500 font-mono">
+        <div className="px-4 py-2.5 bg-surface border-t border-border flex items-center justify-between text-xs text-muted-foreground font-mono">
           <div className="flex items-center gap-2">
-            <span className="px-1.5 py-0.5 rounded bg-white/10 text-neutral-300 text-[10px]">↑↓</span>
+            <span className="px-1.5 py-0.5 rounded bg-muted text-foreground text-[10px]">↑↓</span>
             <span>Navigate</span>
-            <span className="px-1.5 py-0.5 rounded bg-white/10 text-neutral-300 text-[10px]">↵</span>
+            <span className="px-1.5 py-0.5 rounded bg-muted text-foreground text-[10px]">↵</span>
             <span>Select</span>
-            <span className="px-1.5 py-0.5 rounded bg-white/10 text-neutral-300 text-[10px]">ESC</span>
+            <span className="px-1.5 py-0.5 rounded bg-muted text-foreground text-[10px]">ESC</span>
             <span>Close</span>
           </div>
-          <span className="text-cyan-400/80">Command Palette Active</span>
+          <span className="text-primary font-mono">Command Palette Active</span>
         </div>
       </div>
     </div>

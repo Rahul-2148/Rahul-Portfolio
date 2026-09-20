@@ -76,13 +76,13 @@ export function CustomCursor() {
           scale: isHovered ? (cursorText ? 2.6 : 1.7) : 1,
           backgroundColor: isHovered
             ? cursorText
-              ? 'rgba(0, 240, 255, 0.95)'
-              : 'rgba(0, 240, 255, 0.15)'
-            : 'rgba(0, 240, 255, 0.4)',
-          borderColor: isHovered ? '#00f0ff' : 'rgba(0, 240, 255, 0.6)',
+              ? 'var(--primary)'
+              : 'rgba(var(--accent-rgb), 0.15)'
+            : 'rgba(var(--accent-rgb), 0.35)',
+          borderColor: isHovered ? 'var(--primary)' : 'rgba(var(--accent-rgb), 0.6)',
         }}
         transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-        className="flex items-center justify-center rounded-full border border-cyan-400 backdrop-blur-xs w-6 h-6 text-[8px] font-mono font-bold tracking-wider text-black select-none"
+        className="flex items-center justify-center rounded-full border border-primary backdrop-blur-xs w-6 h-6 text-[8px] font-mono font-bold tracking-wider text-primary-foreground select-none"
       >
         {cursorText && (
           <span className="scale-75 uppercase tracking-widest">{cursorText}</span>
