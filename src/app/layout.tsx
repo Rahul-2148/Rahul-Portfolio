@@ -51,7 +51,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" data-theme="cyber-cyan" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -83,7 +83,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="bg-background text-foreground antialiased transition-colors duration-300">
+      <body className="bg-background text-foreground antialiased transition-colors duration-300" suppressHydrationWarning>
         <ClientShell>
           <Navigation />
           <main className="min-h-screen pt-20">{children}</main>
