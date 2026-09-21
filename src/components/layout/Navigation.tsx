@@ -3,15 +3,33 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Terminal, Search, Menu, X } from 'lucide-react';
+import { Terminal, Search, Menu, X, User, Briefcase } from 'lucide-react';
 import { GithubIcon } from '@/components/ui/Icons';
 import { ThemeToggle } from '@/components/interactive/ThemeToggle';
+import { VisitorAuthModal } from '@/components/interactive/VisitorAuthModal';
 import { navItems, personalInfo } from '@/lib/data/portfolio';
 
 export function Navigation() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [visitorModalOpen, setVisitorModalOpen] = useState(false);
+  const [visitorUser, setVisitorUser] = useState<{ name: string; company: string } | null>(null);
+
+  useEffect(() => {
+    async function checkVisitor() {
+      try {
+        const res = await fetch('/api/visitor/auth');
+        const data = await res.json();
+        if (data.authenticated && data.user) {
+          setVisitorUser(data.user);
+        }
+      } catch {
+        // Not signed in
+      }
+    }
+    checkVisitor();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -117,6 +135,33 @@ export function Navigation() {
               <Terminal className="w-4 h-4" />
             </button>
 
+            {/* Recruiter / Visitor Pass Button */}
+            <button
+              onClick={() => setVisitorModalOpen(true)}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
+                visitorUser
+                  ? 'bg-primary/15 text-primary border-border-accent shadow-xs font-semibold'
+                  : 'bg-surface hover:bg-surface-elevated border-border text-muted-foreground hover:text-foreground'
+              }`}
+              title={visitorUser ? `Signed in as ${visitorUser.name}` : 'Recruiter & Client Pass'}
+            >
+              {visitorUser ? (
+                <>
+                  <Briefcase className="w-3.5 h-3.5 text-primary" />
+                  <span className="hidden sm:inline">
+                    {visitorUser.name.split(' ')[0]} ({visitorUser.company || 'Pass'})
+                  </span>
+                  <span className="sm:hidden">Pass</span>
+                </>
+              ) : (
+                <>
+                  <User className="w-3.5 h-3.5 text-primary" />
+                  <span className="hidden md:inline">Recruiter Pass</span>
+                  <span className="md:hidden">Pass</span>
+                </>
+              )}
+            </button>
+
             {/* GitHub link */}
             <a
               href={personalInfo.github}
@@ -187,9 +232,26 @@ export function Navigation() {
                 <Terminal className="w-3.5 h-3.5 text-primary" /> Terminal
               </button>
             </div>
+
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setVisitorModalOpen(true);
+              }}
+              className="w-full py-2.5 rounded-xl bg-primary/10 border border-border-accent text-xs font-mono text-primary flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors"
+            >
+              <Briefcase className="w-4 h-4 text-primary" />
+              <span>{visitorUser ? `Active Pass: ${visitorUser.name}` : 'Recruiter & Visitor Pass'}</span>
+            </button>
           </div>
         </div>
       )}
+
+      <VisitorAuthModal
+        isOpen={visitorModalOpen}
+        onClose={() => setVisitorModalOpen(false)}
+        onUserUpdate={(u) => setVisitorUser(u ? { name: u.name, company: u.company } : null)}
+      />
     </>
   );
 }

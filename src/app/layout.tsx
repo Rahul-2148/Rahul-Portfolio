@@ -3,6 +3,7 @@ import '@/styles/globals.css';
 import { Navigation } from '@/components/layout/Navigation';
 import { Footer } from '@/components/layout/Footer';
 import { ClientShell } from '@/components/providers/ClientShell';
+import { VisitorTracker } from '@/components/interactive/VisitorTracker';
 import { personalInfo } from '@/lib/data/portfolio';
 
 export const metadata: Metadata = {
@@ -85,6 +86,7 @@ export default function RootLayout({
       </head>
       <body className="bg-background text-foreground antialiased transition-colors duration-300" suppressHydrationWarning>
         <ClientShell>
+          <VisitorTracker />
           <Navigation />
           <main className="min-h-screen pt-20">{children}</main>
           <Footer />

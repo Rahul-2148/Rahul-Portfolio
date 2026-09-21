@@ -27,6 +27,12 @@ import {
   CheckCircle2,
   AlertTriangle,
   Key,
+  Users,
+  BarChart3,
+  Mail,
+  Send,
+  Activity,
+  Search as SearchIcon,
 } from 'lucide-react';
 import { Project, Experience, Education, Skill, PersonalInfo } from '@/types';
 
@@ -36,14 +42,24 @@ export default function AdminPage() {
   const [passcode, setPasscode] = useState('');
   const [showPasscode, setShowPasscode] = useState(false);
   const [authError, setAuthError] = useState('');
-  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'experience' | 'education' | 'cv' | 'profile' | 'security'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'experience' | 'education' | 'cv' | 'profile' | 'security' | 'analytics'>('overview');
 
-  // Gate State (Login vs Emergency Recovery)
-  const [authMode, setAuthMode] = useState<'login' | 'recovery'>('login');
+  // Gate State (Login vs Emergency Recovery vs Email OTP)
+  const [authMode, setAuthMode] = useState<'login' | 'recovery' | 'email_otp'>('login');
   const [recoveryKey, setRecoveryKey] = useState('');
   const [newPasscodeReset, setNewPasscodeReset] = useState('');
   const [confirmPasscodeReset, setConfirmPasscodeReset] = useState('');
   const [recoverySuccess, setRecoverySuccess] = useState('');
+
+  // Email OTP Reset State
+  const [adminEmail, setAdminEmail] = useState('rahulraj2148@gmail.com');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpNewPasscode, setOtpNewPasscode] = useState('');
+  const [otpConfirmPasscode, setOtpConfirmPasscode] = useState('');
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [otpCooldown, setOtpCooldown] = useState(0);
+  const [otpSentNotice, setOtpSentNotice] = useState<string | null>(null);
+  const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
 
   // Security Tab State
   const [currentPasscode, setCurrentPasscode] = useState('');
@@ -51,6 +67,50 @@ export default function AdminPage() {
   const [confirmPasscode, setConfirmPasscode] = useState('');
   const [securityMsg, setSecurityMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isUpdatingPasscode, setIsUpdatingPasscode] = useState(false);
+
+  // Analytics & Visitor Intelligence State
+  interface AnalyticsPayload {
+    isConnected: boolean;
+    overview: {
+      totalViews: number;
+      uniqueGuests: number;
+      totalRecruiters: number;
+      todayViews: number;
+      todayGuests: number;
+      todayRecruiters: number;
+    };
+    recruiters: Array<{
+      _id: string;
+      name: string;
+      email: string;
+      company: string;
+      role: string;
+      purpose: string;
+      loginCount: number;
+      lastLoginAt: string;
+      notes?: string;
+    }>;
+    recentVisitors: Array<{
+      _id: string;
+      visitorId: string;
+      type: string;
+      userId?: { name: string; email: string; company: string };
+      viewsCount: number;
+      lastPath: string;
+      lastVisitedAt: string;
+      ip?: string;
+      userAgent?: string;
+    }>;
+    daily: Array<{
+      date: string;
+      totalViews: number;
+      guestViews: number;
+      userViews: number;
+    }>;
+  }
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsPayload | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [recruiterSearch, setRecruiterSearch] = useState('');
 
   // Portfolio State
   const [loading, setLoading] = useState(false);
@@ -221,6 +281,118 @@ export default function AdminPage() {
     }
   };
 
+  // Handle Send Email OTP
+  const handleSendEmailOtp = async () => {
+    setSendingOtp(true);
+    setAuthError('');
+    setOtpSentNotice(null);
+    setDevOtpHint(null);
+    try {
+      const res = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send_email_otp' }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setOtpSentNotice(data.message || `Verification OTP sent to ${data.adminEmail || 'your email'}!`);
+        if (data.devOtp) {
+          setDevOtpHint(`Dev Code: ${data.devOtp}`);
+        }
+        if (data.adminEmail) {
+          setAdminEmail(data.adminEmail);
+        }
+        setOtpCooldown(45);
+        const timer = setInterval(() => {
+          setOtpCooldown((prev) => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        setAuthError(data.error || 'Failed to send OTP.');
+      }
+    } catch {
+      setAuthError('Network error while requesting verification OTP.');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  // Handle Verify Email OTP & Reset Passcode
+  const handleVerifyEmailOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setRecoverySuccess('');
+
+    if (!otpCode || otpCode.trim().length !== 6) {
+      setAuthError('Please enter the 6-digit OTP code sent to your email.');
+      return;
+    }
+    if (!otpNewPasscode || otpNewPasscode.length < 4) {
+      setAuthError('New passcode must be at least 4 characters.');
+      return;
+    }
+    if (otpNewPasscode !== otpConfirmPasscode) {
+      setAuthError('New passcode and confirm passcode do not match.');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'verify_email_otp',
+          otp: otpCode.trim(),
+          newPasscode: otpNewPasscode.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRecoverySuccess('Passcode reset successfully via Email OTP! Unlocking Studio...');
+        setTimeout(() => {
+          setIsAuthenticated(true);
+          fetchPortfolioData();
+          setAuthMode('login');
+          setOtpCode('');
+          setOtpNewPasscode('');
+          setOtpConfirmPasscode('');
+          setRecoverySuccess('');
+        }, 1200);
+      } else {
+        setAuthError(data.error || 'Failed to verify OTP.');
+      }
+    } catch {
+      setAuthError('Network error while verifying OTP.');
+    }
+  };
+
+  // Fetch Analytics & Visitor Intelligence
+  const fetchAnalytics = async () => {
+    setLoadingAnalytics(true);
+    try {
+      const res = await fetch('/api/admin/analytics');
+      if (res.ok) {
+        const data = await res.json();
+        setAnalyticsData(data);
+      }
+    } catch (err) {
+      console.error('Failed to load analytics:', err);
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated && activeTab === 'analytics') {
+      fetchAnalytics();
+    }
+  }, [isAuthenticated, activeTab]);
+
   // Handle Passcode Update from Security Tab
   const handleChangePasscode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -337,16 +509,22 @@ export default function AdminPage() {
               <Lock className="w-6 h-6" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              {authMode === 'login' ? 'Admin Studio' : 'Reset Passcode'}
+              {authMode === 'login'
+                ? 'Admin Studio'
+                : authMode === 'email_otp'
+                ? 'Email OTP Reset'
+                : 'Master Key Reset'}
             </h1>
             <p className="text-xs text-muted-foreground font-mono">
               {authMode === 'login'
                 ? 'Protected Developer Portal // Restricted Access'
+                : authMode === 'email_otp'
+                ? 'Verify 6-Digit Code sent to your inbox'
                 : 'Emergency Recovery // Master Key Verification'}
             </p>
           </div>
 
-          {authMode === 'login' ? (
+          {authMode === 'login' && (
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-mono text-muted-foreground block">
@@ -385,20 +563,168 @@ export default function AdminPage() {
                 <span>Unlock Admin Dashboard</span>
               </button>
 
-              <div className="pt-1 text-center">
+              <div className="pt-2 flex flex-col items-center gap-2 text-xs font-mono">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('email_otp');
+                    setAuthError('');
+                    setOtpSentNotice(null);
+                    setDevOtpHint(null);
+                  }}
+                  className="text-primary hover:underline cursor-pointer flex items-center gap-1.5"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Forgot Passcode? Send OTP to Email</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => {
                     setAuthMode('recovery');
                     setAuthError('');
                   }}
-                  className="text-xs font-mono text-primary hover:underline cursor-pointer"
+                  className="text-muted-foreground hover:text-foreground text-[11px] cursor-pointer"
                 >
-                  Forgot Passcode? Reset via Master Key
+                  Or reset via Master Recovery Key
                 </button>
               </div>
             </form>
-          ) : (
+          )}
+
+          {authMode === 'email_otp' && (
+            <form onSubmit={handleVerifyEmailOtp} className="space-y-3.5">
+              <div className="p-3 rounded-xl bg-primary/10 border border-border-accent text-xs font-mono space-y-1.5">
+                <div className="flex items-center justify-between font-bold text-primary">
+                  <div className="flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Email OTP Verification</span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground font-normal">10m validity</span>
+                </div>
+                <p className="text-muted-foreground text-[11px] leading-relaxed">
+                  Send a one-time 6-digit code to <code className="text-primary font-bold">{adminEmail}</code>.
+                </p>
+              </div>
+
+              {/* Send / Resend OTP Trigger Button */}
+              <div>
+                <button
+                  type="button"
+                  disabled={sendingOtp || otpCooldown > 0}
+                  onClick={handleSendEmailOtp}
+                  className="w-full py-2 px-3 rounded-xl bg-surface hover:bg-surface-elevated border border-border text-xs font-mono text-foreground flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Send className={`w-3.5 h-3.5 text-primary ${sendingOtp ? 'animate-spin' : ''}`} />
+                  <span>
+                    {sendingOtp
+                      ? 'Sending OTP...'
+                      : otpCooldown > 0
+                      ? `Resend Code in ${otpCooldown}s`
+                      : `Send 6-Digit OTP to ${adminEmail}`}
+                  </span>
+                </button>
+              </div>
+
+              {otpSentNotice && (
+                <div className="p-2 rounded-xl bg-primary/10 border border-border-accent text-xs font-mono text-primary text-center">
+                  {otpSentNotice}
+                </div>
+              )}
+
+              {devOtpHint && (
+                <div className="p-2 rounded-lg bg-surface border border-dashed border-emerald-500/40 text-xs font-mono text-emerald-400 text-center">
+                  ⚡ {devOtpHint}
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <label className="text-xs font-mono text-muted-foreground block">
+                  Enter 6-Digit Code
+                </label>
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="e.g. 849201"
+                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground font-mono text-center tracking-[6px] text-base font-bold placeholder:tracking-normal placeholder:text-xs placeholder:font-normal placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
+                  autoFocus
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-mono text-muted-foreground block">
+                  New Passcode (min 4 chars)
+                </label>
+                <input
+                  type="password"
+                  value={otpNewPasscode}
+                  onChange={(e) => setOtpNewPasscode(e.target.value)}
+                  placeholder="Enter new passkey"
+                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-mono text-muted-foreground block">
+                  Confirm New Passcode
+                </label>
+                <input
+                  type="password"
+                  value={otpConfirmPasscode}
+                  onChange={(e) => setOtpConfirmPasscode(e.target.value)}
+                  placeholder="Re-enter new passkey"
+                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
+                />
+              </div>
+
+              {authError && (
+                <p className="text-xs font-mono text-destructive bg-destructive/10 p-2.5 rounded-xl border border-destructive/20 text-center">
+                  {authError}
+                </p>
+              )}
+
+              {recoverySuccess && (
+                <p className="text-xs font-mono text-emerald-500 bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/20 text-center">
+                  {recoverySuccess}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-95 transition-opacity flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>Verify OTP & Unlock Studio</span>
+              </button>
+
+              <div className="pt-1 flex items-center justify-between text-xs font-mono">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('login');
+                    setAuthError('');
+                  }}
+                  className="text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  ← Standard Login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('recovery');
+                    setAuthError('');
+                  }}
+                  className="text-primary hover:underline cursor-pointer"
+                >
+                  Use Master Key →
+                </button>
+              </div>
+            </form>
+          )}
+
+          {authMode === 'recovery' && (
             <form onSubmit={handleEmergencyReset} className="space-y-3.5">
               <div className="p-3 rounded-xl bg-primary/10 border border-border-accent text-xs font-mono space-y-1">
                 <div className="flex items-center gap-1.5 font-bold text-primary">
@@ -419,7 +745,7 @@ export default function AdminPage() {
                   value={recoveryKey}
                   onChange={(e) => setRecoveryKey(e.target.value)}
                   placeholder="e.g. RAHUL-RECOVER-2026-SECRET"
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
                   autoFocus
                 />
               </div>
@@ -470,16 +796,26 @@ export default function AdminPage() {
                 <span>Reset Passcode & Unlock</span>
               </button>
 
-              <div className="pt-1 text-center">
+              <div className="pt-1 flex items-center justify-between text-xs font-mono">
                 <button
                   type="button"
                   onClick={() => {
                     setAuthMode('login');
                     setAuthError('');
                   }}
-                  className="text-xs font-mono text-muted-foreground hover:text-foreground cursor-pointer"
+                  className="text-muted-foreground hover:text-foreground cursor-pointer"
                 >
-                  ← Back to Standard Passcode Login
+                  ← Standard Login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('email_otp');
+                    setAuthError('');
+                  }}
+                  className="text-primary hover:underline cursor-pointer"
+                >
+                  Reset via Email OTP →
                 </button>
               </div>
             </form>
@@ -573,6 +909,7 @@ export default function AdminPage() {
         <div className="flex items-center gap-2 border-b border-border pb-4 overflow-x-auto select-none font-mono text-xs">
           {[
             { id: 'overview', label: 'Overview & Stats', icon: Layers },
+            { id: 'analytics', label: 'Visitors & Traffic', icon: Users },
             { id: 'profile', label: 'Profile & Bio', icon: User },
             { id: 'cv', label: 'CV & Resume', icon: FileText },
             { id: 'education', label: 'Education', icon: GraduationCap },
@@ -634,6 +971,30 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              {/* Visitor Intelligence Quick Access Banner */}
+              <div
+                onClick={() => setActiveTab('analytics')}
+                className="p-4 rounded-2xl bg-primary/10 border border-border-accent flex items-center justify-between cursor-pointer hover:bg-primary/15 transition-colors card-beam"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-primary text-primary-foreground">
+                    <Users className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold font-mono text-foreground flex items-center gap-1.5">
+                      <span>Visitor &amp; Recruiter Intelligence Live</span>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px]">Tracking</span>
+                    </span>
+                    <p className="text-[11px] text-muted-foreground font-mono">
+                      Click to inspect real-time profile visits, unique guests, and recruiter check-ins
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-mono text-primary font-bold hidden sm:inline">
+                  View Analytics →
+                </span>
+              </div>
+
               {/* Database Connection Card */}
               <div className="p-6 rounded-2xl bg-card border border-border shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
@@ -687,6 +1048,277 @@ export default function AdminPage() {
                     <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
                     <span>Refresh Status</span>
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ====================================================
+              TAB: VISITORS & TRAFFIC INTELLIGENCE
+              ==================================================== */}
+          {activeTab === 'analytics' && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              {/* Header with Refresh */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-card border border-border shadow-sm card-beam">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-primary/10 text-primary border border-border-accent">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-foreground">Visitor &amp; Recruiter Intelligence</h2>
+                    <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                      Real-time telemetry of profile visits, anonymous guests &amp; verified recruiters
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={fetchAnalytics}
+                    disabled={loadingAnalytics}
+                    className="px-4 py-2 rounded-xl bg-surface hover:bg-surface-elevated border border-border text-xs font-mono text-foreground transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${loadingAnalytics ? 'animate-spin text-primary' : ''}`} />
+                    <span>{loadingAnalytics ? 'Syncing...' : 'Refresh Metrics'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 4 KPI Metric Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-5 rounded-2xl bg-card border border-border shadow-xs card-beam">
+                  <span className="text-xs font-mono text-muted-foreground uppercase flex items-center justify-between">
+                    <span>Total Profile Views</span>
+                    <BarChart3 className="w-4 h-4 text-primary" />
+                  </span>
+                  <div className="text-3xl font-bold text-foreground mt-2">
+                    {analyticsData?.overview.totalViews ?? 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 font-mono">
+                    All-time page loads tracked
+                  </p>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-card border border-border shadow-xs card-beam">
+                  <span className="text-xs font-mono text-muted-foreground uppercase flex items-center justify-between">
+                    <span>Unique Guests</span>
+                    <Users className="w-4 h-4 text-emerald-400" />
+                  </span>
+                  <div className="text-3xl font-bold text-emerald-400 mt-2">
+                    {analyticsData?.overview.uniqueGuests ?? 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 font-mono">
+                    Anonymous unique visitors
+                  </p>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-card border border-border shadow-xs card-beam">
+                  <span className="text-xs font-mono text-muted-foreground uppercase flex items-center justify-between">
+                    <span>Logged-in Recruiters</span>
+                    <Briefcase className="w-4 h-4 text-primary" />
+                  </span>
+                  <div className="text-3xl font-bold text-primary mt-2">
+                    {analyticsData?.overview.totalRecruiters ?? 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 font-mono">
+                    Verified hiring leads &amp; clients
+                  </p>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-card border border-border shadow-xs card-beam">
+                  <span className="text-xs font-mono text-muted-foreground uppercase flex items-center justify-between">
+                    <span>Today&apos;s Activity</span>
+                    <Activity className="w-4 h-4 text-amber-400" />
+                  </span>
+                  <div className="text-3xl font-bold text-foreground mt-2">
+                    {analyticsData?.overview.todayViews ?? 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 font-mono">
+                    {analyticsData?.overview.todayGuests ?? 0} guests // {analyticsData?.overview.todayRecruiters ?? 0} recruiters
+                  </p>
+                </div>
+              </div>
+
+              {/* Recruiter & Client Directory Table */}
+              <div className="p-6 rounded-2xl bg-card border border-border shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
+                  <div>
+                    <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                      <Briefcase className="w-4 h-4 text-primary" />
+                      <span>Verified Recruiter &amp; Client Directory</span>
+                    </h3>
+                    <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                      Recruiters, founders, and hiring leads who checked in with a Recruiter Pass
+                    </p>
+                  </div>
+
+                  <div className="relative w-full sm:w-64">
+                    <input
+                      type="text"
+                      value={recruiterSearch}
+                      onChange={(e) => setRecruiterSearch(e.target.value)}
+                      placeholder="Search company or name..."
+                      className="w-full px-3 py-1.5 pl-8 rounded-xl bg-surface border border-input text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-border-accent"
+                    />
+                    <SearchIcon className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  </div>
+                </div>
+
+                {/* Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs font-mono">
+                    <thead>
+                      <tr className="border-b border-border text-muted-foreground">
+                        <th className="py-2.5 px-3">Recruiter / Client</th>
+                        <th className="py-2.5 px-3">Company / Org</th>
+                        <th className="py-2.5 px-3">Role / Title</th>
+                        <th className="py-2.5 px-3">Purpose</th>
+                        <th className="py-2.5 px-3 text-center">Visits</th>
+                        <th className="py-2.5 px-3 text-right">Last Visit</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {analyticsData?.recruiters && analyticsData.recruiters.length > 0 ? (
+                        analyticsData.recruiters
+                          .filter((r) => {
+                            if (!recruiterSearch.trim()) return true;
+                            const query = recruiterSearch.toLowerCase();
+                            return (
+                              r.name.toLowerCase().includes(query) ||
+                              r.company.toLowerCase().includes(query) ||
+                              r.email.toLowerCase().includes(query)
+                            );
+                          })
+                          .map((recruiter) => (
+                            <tr key={recruiter._id} className="hover:bg-surface/50 transition-colors">
+                              <td className="py-3 px-3">
+                                <div className="font-bold text-foreground">{recruiter.name}</div>
+                                <a
+                                  href={`mailto:${recruiter.email}`}
+                                  className="text-[11px] text-primary hover:underline"
+                                >
+                                  {recruiter.email}
+                                </a>
+                              </td>
+                              <td className="py-3 px-3">
+                                <span className="font-semibold text-foreground">
+                                  {recruiter.company || 'Independent'}
+                                </span>
+                              </td>
+                              <td className="py-3 px-3 text-muted-foreground">{recruiter.role}</td>
+                              <td className="py-3 px-3">
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                    recruiter.purpose === 'hiring'
+                                      ? 'bg-primary/10 text-primary border border-primary/20'
+                                      : recruiter.purpose === 'freelance'
+                                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                      : 'bg-muted text-muted-foreground'
+                                  }`}
+                                >
+                                  {recruiter.purpose}
+                                </span>
+                              </td>
+                              <td className="py-3 px-3 text-center font-bold text-foreground">
+                                {recruiter.loginCount}
+                              </td>
+                              <td className="py-3 px-3 text-right text-muted-foreground text-[11px]">
+                                {new Date(recruiter.lastLoginAt).toLocaleDateString()}{' '}
+                                {new Date(recruiter.lastLoginAt).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </td>
+                            </tr>
+                          ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                            <div className="flex flex-col items-center gap-2">
+                              <Users className="w-6 h-6 text-muted-foreground opacity-40" />
+                              <p>No verified recruiters checked in yet.</p>
+                              <span className="text-[11px] text-muted-foreground/70">
+                                Visitors who click &ldquo;Recruiter Pass&rdquo; in your top navigation will automatically appear here.
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Recent Visitors Telemetry Table */}
+              <div className="p-6 rounded-2xl bg-card border border-border shadow-sm space-y-4">
+                <div className="border-b border-border pb-3 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-emerald-400" />
+                      <span>Recent Traffic Telemetry Log</span>
+                    </h3>
+                    <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                      Last 30 page visits across portfolio routes
+                    </p>
+                  </div>
+                  <span className="text-xs font-mono text-muted-foreground">
+                    {analyticsData?.recentVisitors.length || 0} recent sessions
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs font-mono">
+                    <thead>
+                      <tr className="border-b border-border text-muted-foreground">
+                        <th className="py-2 px-3">Visitor Type</th>
+                        <th className="py-2 px-3">Path Visited</th>
+                        <th className="py-2 px-3 text-center">Session Views</th>
+                        <th className="py-2 px-3">Device / Browser</th>
+                        <th className="py-2 px-3 text-right">Visited At</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {analyticsData?.recentVisitors && analyticsData.recentVisitors.length > 0 ? (
+                        analyticsData.recentVisitors.map((v) => (
+                          <tr key={v._id} className="hover:bg-surface/50 transition-colors">
+                            <td className="py-2.5 px-3">
+                              {v.type === 'user' && v.userId ? (
+                                <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold">
+                                  💼 {v.userId.name} ({v.userId.company})
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full bg-surface text-muted-foreground border border-border text-[10px]">
+                                  Guest ({v.visitorId.slice(0, 10)}...)
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 text-foreground font-semibold">
+                              {v.lastPath}
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-bold text-primary">
+                              {v.viewsCount}
+                            </td>
+                            <td className="py-2.5 px-3 text-muted-foreground text-[11px] max-w-xs truncate">
+                              {v.userAgent ? v.userAgent.split(' ')[0] : 'Standard Client'}
+                            </td>
+                            <td className="py-2.5 px-3 text-right text-muted-foreground text-[11px]">
+                              {new Date(v.lastVisitedAt).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                              })}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="py-6 text-center text-muted-foreground">
+                            No recent traffic recorded yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>

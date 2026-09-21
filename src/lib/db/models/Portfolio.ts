@@ -85,6 +85,12 @@ const SkillSchema = new Schema(
 const SecuritySchema = new Schema(
   {
     customPasscode: { type: String, default: '' },
+    adminEmail: { type: String, default: 'rahulraj2148@gmail.com' },
+    otp: {
+      code: { type: String, default: '' },
+      expiresAt: { type: Date, default: null },
+      lastRequestedAt: { type: Date, default: null },
+    },
     updatedAt: { type: Date, default: Date.now },
   },
   { _id: false }
@@ -94,6 +100,12 @@ export interface IPortfolioDoc extends mongoose.Document, PortfolioData {
   docId: string;
   security?: {
     customPasscode?: string;
+    adminEmail?: string;
+    otp?: {
+      code?: string;
+      expiresAt?: Date | null;
+      lastRequestedAt?: Date | null;
+    };
     updatedAt?: Date;
   };
   updatedAt: Date;
