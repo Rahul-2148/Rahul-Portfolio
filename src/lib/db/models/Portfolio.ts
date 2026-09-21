@@ -82,8 +82,20 @@ const SkillSchema = new Schema(
   { _id: false }
 );
 
+const SecuritySchema = new Schema(
+  {
+    customPasscode: { type: String, default: '' },
+    updatedAt: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
 export interface IPortfolioDoc extends mongoose.Document, PortfolioData {
   docId: string;
+  security?: {
+    customPasscode?: string;
+    updatedAt?: Date;
+  };
   updatedAt: Date;
 }
 
@@ -95,6 +107,7 @@ const PortfolioSchema = new Schema<IPortfolioDoc>(
     experiences: { type: [ExperienceSchema], default: [] },
     educations: { type: [EducationSchema], default: [] },
     skills: { type: [SkillSchema], default: [] },
+    security: { type: SecuritySchema, default: () => ({}) },
   },
   { timestamps: true }
 );

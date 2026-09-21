@@ -22,6 +22,11 @@ import {
   ArrowLeft,
   Eye,
   EyeOff,
+  KeyRound,
+  LogOut,
+  CheckCircle2,
+  AlertTriangle,
+  Key,
 } from 'lucide-react';
 import { Project, Experience, Education, Skill, PersonalInfo } from '@/types';
 
@@ -31,7 +36,21 @@ export default function AdminPage() {
   const [passcode, setPasscode] = useState('');
   const [showPasscode, setShowPasscode] = useState(false);
   const [authError, setAuthError] = useState('');
-  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'experience' | 'education' | 'cv' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'experience' | 'education' | 'cv' | 'profile' | 'security'>('overview');
+
+  // Gate State (Login vs Emergency Recovery)
+  const [authMode, setAuthMode] = useState<'login' | 'recovery'>('login');
+  const [recoveryKey, setRecoveryKey] = useState('');
+  const [newPasscodeReset, setNewPasscodeReset] = useState('');
+  const [confirmPasscodeReset, setConfirmPasscodeReset] = useState('');
+  const [recoverySuccess, setRecoverySuccess] = useState('');
+
+  // Security Tab State
+  const [currentPasscode, setCurrentPasscode] = useState('');
+  const [newPasscode, setNewPasscode] = useState('');
+  const [confirmPasscode, setConfirmPasscode] = useState('');
+  const [securityMsg, setSecurityMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isUpdatingPasscode, setIsUpdatingPasscode] = useState(false);
 
   // Portfolio State
   const [loading, setLoading] = useState(false);
@@ -137,6 +156,116 @@ export default function AdminPage() {
     }
   };
 
+  // Handle Logout
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' }),
+      });
+    } catch {
+      // Ignore
+    }
+    setIsAuthenticated(false);
+    setPasscode('');
+    setActiveTab('overview');
+  };
+
+  // Handle Emergency Reset via Master Recovery Key
+  const handleEmergencyReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setRecoverySuccess('');
+
+    if (!recoveryKey.trim()) {
+      setAuthError('Please enter your Master Recovery Key.');
+      return;
+    }
+    if (!newPasscodeReset || newPasscodeReset.length < 4) {
+      setAuthError('New passcode must be at least 4 characters long.');
+      return;
+    }
+    if (newPasscodeReset !== confirmPasscodeReset) {
+      setAuthError('New passcode and confirmation passcode do not match.');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'reset_passcode',
+          recoveryKey: recoveryKey.trim(),
+          newPasscode: newPasscodeReset.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRecoverySuccess('Passcode successfully reset! Unlocking Studio...');
+        setTimeout(() => {
+          setIsAuthenticated(true);
+          fetchPortfolioData();
+          setAuthMode('login');
+          setRecoveryKey('');
+          setNewPasscodeReset('');
+          setConfirmPasscodeReset('');
+          setRecoverySuccess('');
+        }, 1200);
+      } else {
+        setAuthError(data.error || 'Failed to reset passcode.');
+      }
+    } catch {
+      setAuthError('Network error. Please try again.');
+    }
+  };
+
+  // Handle Passcode Update from Security Tab
+  const handleChangePasscode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSecurityMsg(null);
+
+    if (!currentPasscode) {
+      setSecurityMsg({ type: 'error', text: 'Please enter your current passcode.' });
+      return;
+    }
+    if (!newPasscode || newPasscode.length < 4) {
+      setSecurityMsg({ type: 'error', text: 'New passcode must be at least 4 characters.' });
+      return;
+    }
+    if (newPasscode !== confirmPasscode) {
+      setSecurityMsg({ type: 'error', text: 'New passcode and confirmation do not match.' });
+      return;
+    }
+
+    setIsUpdatingPasscode(true);
+    try {
+      const res = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'change_passcode',
+          currentPasscode,
+          newPasscode,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSecurityMsg({ type: 'success', text: data.message || 'Passcode updated successfully!' });
+        setCurrentPasscode('');
+        setNewPasscode('');
+        setConfirmPasscode('');
+      } else {
+        setSecurityMsg({ type: 'error', text: data.error || 'Failed to update passcode.' });
+      }
+    } catch {
+      setSecurityMsg({ type: 'error', text: 'Connection error while updating passcode.' });
+    } finally {
+      setIsUpdatingPasscode(false);
+    }
+  };
+
   // Save changes to database
   const saveSection = async (section: string, data: unknown) => {
     setSaveStatus('Saving...');
@@ -207,57 +336,161 @@ export default function AdminPage() {
             <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-border-accent flex items-center justify-center text-primary mb-2">
               <Lock className="w-6 h-6" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Admin Studio</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              {authMode === 'login' ? 'Admin Studio' : 'Reset Passcode'}
+            </h1>
             <p className="text-xs text-muted-foreground font-mono">
-              Protected Developer Portal // Restricted Access
+              {authMode === 'login'
+                ? 'Protected Developer Portal // Restricted Access'
+                : 'Emergency Recovery // Master Key Verification'}
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-mono text-muted-foreground block">
-                Security Passcode
-              </label>
-              <div className="relative">
-                <input
-                  type={showPasscode ? 'text' : 'password'}
-                  value={passcode}
-                  onChange={(e) => setPasscode(e.target.value)}
-                  placeholder="Enter secret PIN (e.g. rahul2148)"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all pr-10"
-                  autoFocus
-                />
+          {authMode === 'login' ? (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-mono text-muted-foreground block">
+                  Security Passcode
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPasscode ? 'text' : 'password'}
+                    value={passcode}
+                    onChange={(e) => setPasscode(e.target.value)}
+                    placeholder="Enter secret PIN (e.g. rahul2148)"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all pr-10"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasscode(!showPasscode)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    {showPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {authError && (
+                <p className="text-xs font-mono text-destructive bg-destructive/10 p-2.5 rounded-xl border border-destructive/20 text-center">
+                  {authError}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-95 transition-opacity flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>Unlock Admin Dashboard</span>
+              </button>
+
+              <div className="pt-1 text-center">
                 <button
                   type="button"
-                  onClick={() => setShowPasscode(!showPasscode)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    setAuthMode('recovery');
+                    setAuthError('');
+                  }}
+                  className="text-xs font-mono text-primary hover:underline cursor-pointer"
                 >
-                  {showPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  Forgot Passcode? Reset via Master Key
                 </button>
               </div>
-            </div>
+            </form>
+          ) : (
+            <form onSubmit={handleEmergencyReset} className="space-y-3.5">
+              <div className="p-3 rounded-xl bg-primary/10 border border-border-accent text-xs font-mono space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-primary">
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>Master Key Emergency Reset</span>
+                </div>
+                <p className="text-muted-foreground text-[11px] leading-relaxed">
+                  Enter the recovery key from <code className="text-primary font-bold">.env.local</code> (ADMIN_RECOVERY_KEY) to reset your passkey instantly.
+                </p>
+              </div>
 
-            {authError && (
-              <p className="text-xs font-mono text-destructive bg-destructive/10 p-2 rounded-lg border border-destructive/20 text-center">
-                {authError}
-              </p>
-            )}
+              <div className="space-y-1">
+                <label className="text-xs font-mono text-muted-foreground block">
+                  Master Recovery Key
+                </label>
+                <input
+                  type="password"
+                  value={recoveryKey}
+                  onChange={(e) => setRecoveryKey(e.target.value)}
+                  placeholder="e.g. RAHUL-RECOVER-2026-SECRET"
+                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
+                  autoFocus
+                />
+              </div>
 
-            <button
-              type="submit"
-              className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-95 transition-opacity flex items-center justify-center gap-2"
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>Unlock Admin Dashboard</span>
-            </button>
-          </form>
+              <div className="space-y-1">
+                <label className="text-xs font-mono text-muted-foreground block">
+                  New Passcode (min 4 chars)
+                </label>
+                <input
+                  type="password"
+                  value={newPasscodeReset}
+                  onChange={(e) => setNewPasscodeReset(e.target.value)}
+                  placeholder="Enter new passkey"
+                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-mono text-muted-foreground block">
+                  Confirm New Passcode
+                </label>
+                <input
+                  type="password"
+                  value={confirmPasscodeReset}
+                  onChange={(e) => setConfirmPasscodeReset(e.target.value)}
+                  placeholder="Re-enter new passkey"
+                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
+                />
+              </div>
+
+              {authError && (
+                <p className="text-xs font-mono text-destructive bg-destructive/10 p-2.5 rounded-xl border border-destructive/20 text-center">
+                  {authError}
+                </p>
+              )}
+
+              {recoverySuccess && (
+                <p className="text-xs font-mono text-emerald-500 bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/20 text-center">
+                  {recoverySuccess}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-95 transition-opacity flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+              >
+                <Key className="w-4 h-4" />
+                <span>Reset Passcode & Unlock</span>
+              </button>
+
+              <div className="pt-1 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('login');
+                    setAuthError('');
+                  }}
+                  className="text-xs font-mono text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  ← Back to Standard Passcode Login
+                </button>
+              </div>
+            </form>
+          )}
 
           <div className="pt-4 border-t border-border flex items-center justify-between text-[11px] font-mono text-muted-foreground">
             <Link href="/" className="hover:text-primary transition-colors flex items-center gap-1">
               <ArrowLeft className="w-3 h-3" />
               <span>Back to Portfolio</span>
             </Link>
-            <span>Passcode configured in .env.local</span>
+            <span>Passcode & Recovery in .env.local</span>
           </div>
         </div>
       </div>
@@ -323,6 +556,15 @@ export default function AdminPage() {
             <span>Live Site</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </Link>
+
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface hover:bg-surface-elevated border border-border text-xs font-mono text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+            title="Lock and Log Out"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
         </div>
       </header>
 
@@ -336,6 +578,7 @@ export default function AdminPage() {
             { id: 'education', label: 'Education', icon: GraduationCap },
             { id: 'experience', label: 'Experience', icon: Briefcase },
             { id: 'projects', label: 'Projects & Works', icon: Code2 },
+            { id: 'security', label: 'Security & Passkey', icon: KeyRound },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -934,6 +1177,155 @@ export default function AdminPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* ====================================================
+              TAB 7: SECURITY & PASSKEY MANAGEMENT
+              ==================================================== */}
+          {activeTab === 'security' && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column: Change Passkey Form (2 cols) */}
+                <div className="lg:col-span-2 p-6 rounded-2xl bg-card border border-border shadow-sm space-y-6 card-beam">
+                  <div className="flex items-center gap-3 border-b border-border pb-4">
+                    <div className="p-2.5 rounded-xl bg-primary/10 text-primary border border-border-accent">
+                      <KeyRound className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-bold text-foreground">Change Admin Passkey</h2>
+                      <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                        Update the security passcode required to access your secret Studio Dashboard
+                      </p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleChangePasscode} className="space-y-4 max-w-lg">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono text-muted-foreground block">
+                        Current Passcode
+                      </label>
+                      <input
+                        type="password"
+                        value={currentPasscode}
+                        onChange={(e) => setCurrentPasscode(e.target.value)}
+                        placeholder="Enter current passcode"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono text-muted-foreground block">
+                        New Passcode (min 4 characters)
+                      </label>
+                      <input
+                        type="password"
+                        value={newPasscode}
+                        onChange={(e) => setNewPasscode(e.target.value)}
+                        placeholder="Enter new passkey"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono text-muted-foreground block">
+                        Confirm New Passcode
+                      </label>
+                      <input
+                        type="password"
+                        value={confirmPasscode}
+                        onChange={(e) => setConfirmPasscode(e.target.value)}
+                        placeholder="Re-enter new passkey"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
+                      />
+                    </div>
+
+                    {securityMsg && (
+                      <div
+                        className={`p-3 rounded-xl border text-xs font-mono flex items-center gap-2 ${
+                          securityMsg.type === 'success'
+                            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                            : 'bg-destructive/10 text-destructive border-destructive/20'
+                        }`}
+                      >
+                        {securityMsg.type === 'success' ? (
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                        ) : (
+                          <AlertTriangle className="w-4 h-4 shrink-0" />
+                        )}
+                        <span>{securityMsg.text}</span>
+                      </div>
+                    )}
+
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={isUpdatingPasscode}
+                        className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>{isUpdatingPasscode ? 'Updating Cloud Passcode...' : 'Save New Passcode'}</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Right Column: Emergency Recovery & Safety Nets (1 col) */}
+                <div className="space-y-6">
+                  {/* Emergency Recovery Card */}
+                  <div className="p-6 rounded-2xl bg-card border border-border shadow-sm space-y-4">
+                    <div className="flex items-center gap-2.5 text-primary">
+                      <ShieldCheck className="w-5 h-5" />
+                      <h3 className="text-sm font-bold text-foreground">Passcode Recovery Setup</h3>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      If you ever forget your passkey, you have <strong className="text-foreground">two fail-safe methods</strong> to regain access instantly:
+                    </p>
+
+                    <div className="space-y-3 font-mono text-[11px]">
+                      <div className="p-3 rounded-xl bg-surface border border-border space-y-1">
+                        <span className="text-primary font-bold block">1. Self-Service Master Key Reset</span>
+                        <p className="text-muted-foreground">
+                          On the login gate (<code className="text-foreground">/admin</code>), click <strong className="text-foreground">&ldquo;Forgot Passcode?&rdquo;</strong> and enter your <code className="text-primary">ADMIN_RECOVERY_KEY</code> from <code className="text-foreground">.env.local</code>.
+                        </p>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-surface border border-border space-y-1">
+                        <span className="text-primary font-bold block">2. Local .env.local Override</span>
+                        <p className="text-muted-foreground">
+                          Open <code className="text-foreground">.env.local</code> in VSCode / Antigravity and change <code className="text-primary">ADMIN_PASSCODE=...</code> directly.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cloud Persistence Badge Card */}
+                  <div className="p-6 rounded-2xl bg-card border border-border shadow-sm space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-foreground font-bold text-xs font-mono">
+                        <Database className="w-4 h-4 text-primary" />
+                        <span>Storage Persistence</span>
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                        Atlas Sync
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Passcode changes are persisted to your MongoDB Atlas cluster so your custom credentials stay active across server restarts and production deployments.
+                    </p>
+                    <div className="pt-2">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full py-2 rounded-xl bg-surface hover:bg-surface-elevated border border-border text-xs font-mono text-destructive flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Log Out & Lock Studio</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
