@@ -8,9 +8,7 @@ import {
   Database,
   Briefcase,
   GraduationCap,
-  FileText,
   Code2,
-  User,
   Plus,
   Trash2,
   Edit2,
@@ -19,22 +17,25 @@ import {
   Save,
   Sparkles,
   Layers,
-  ArrowLeft,
   Eye,
   EyeOff,
   KeyRound,
   LogOut,
-  CheckCircle2,
-  AlertTriangle,
-  Key,
-  Users,
-  BarChart3,
-  Mail,
-  Send,
-  Activity,
   Search as SearchIcon,
+  ArrowUp,
+  ArrowDown,
+  Star,
+  Clock,
+  Settings,
+  FolderKanban,
+  Activity,
+  BarChart3,
 } from 'lucide-react';
 import { Project, Experience, Education, Skill, PersonalInfo } from '@/types';
+import { ProjectModal } from '@/components/admin/ProjectModal';
+import { LiveVisitorsView } from '@/components/admin/LiveVisitorsView';
+import { AnalyticsDashboard } from '@/components/admin/AnalyticsDashboard';
+import { SkillsView } from '@/components/admin/SkillsView';
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -42,7 +43,9 @@ export default function AdminPage() {
   const [passcode, setPasscode] = useState('');
   const [showPasscode, setShowPasscode] = useState(false);
   const [authError, setAuthError] = useState('');
-  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'experience' | 'education' | 'cv' | 'profile' | 'security' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'projects' | 'skills' | 'live' | 'analytics' | 'experience' | 'education' | 'settings' | 'security' | 'audit'
+  >('overview');
 
   // Gate State (Login vs Emergency Recovery vs Email OTP)
   const [authMode, setAuthMode] = useState<'login' | 'recovery' | 'email_otp'>('login');
@@ -52,7 +55,7 @@ export default function AdminPage() {
   const [recoverySuccess, setRecoverySuccess] = useState('');
 
   // Email OTP Reset State
-  const [adminEmail, setAdminEmail] = useState('rahulraj2148@gmail.com');
+  const adminEmail = 'rahulraj2148@gmail.com';
   const [otpCode, setOtpCode] = useState('');
   const [otpNewPasscode, setOtpNewPasscode] = useState('');
   const [otpConfirmPasscode, setOtpConfirmPasscode] = useState('');
@@ -68,51 +71,30 @@ export default function AdminPage() {
   const [securityMsg, setSecurityMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isUpdatingPasscode, setIsUpdatingPasscode] = useState(false);
 
-  // Analytics & Visitor Intelligence State
-  interface AnalyticsPayload {
-    isConnected: boolean;
-    overview: {
-      totalViews: number;
-      uniqueGuests: number;
-      totalRecruiters: number;
-      todayViews: number;
-      todayGuests: number;
-      todayRecruiters: number;
-    };
-    recruiters: Array<{
-      _id: string;
-      name: string;
-      email: string;
-      company: string;
-      role: string;
-      purpose: string;
-      loginCount: number;
-      lastLoginAt: string;
-      notes?: string;
-    }>;
-    recentVisitors: Array<{
-      _id: string;
-      visitorId: string;
-      type: string;
-      userId?: { name: string; email: string; company: string };
-      viewsCount: number;
-      lastPath: string;
-      lastVisitedAt: string;
-      ip?: string;
-      userAgent?: string;
-    }>;
-    daily: Array<{
-      date: string;
-      totalViews: number;
-      guestViews: number;
-      userViews: number;
-    }>;
-  }
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsPayload | null>(null);
-  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
-  const [recruiterSearch, setRecruiterSearch] = useState('');
+  // Projects State
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [projectFilter, setProjectFilter] = useState<'all' | 'published' | 'draft' | 'archived'>('all');
+  const [projectSearch, setProjectSearch] = useState('');
+  const [selectedProjectForModal, setSelectedProjectForModal] = useState<Project | null>(null);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
 
-  // Portfolio State
+  // Reusable Skills State
+  const [skills, setSkills] = useState<Skill[]>([]);
+
+  // Live Presence State
+  const [onlineCount, setOnlineCount] = useState(0);
+
+  // Audit Logs State
+  interface AuditLogItem {
+    action: string;
+    resource: string;
+    details?: Record<string, unknown>;
+    timestamp: string;
+  }
+  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
+
+  // Portfolio Experience, Education, Settings State
   const [loading, setLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [dbStatus, setDbStatus] = useState<{ isConnected: boolean; message: string; source: string }>({
@@ -133,30 +115,27 @@ export default function AdminPage() {
     resumeUrl: '',
   });
 
-  const [projects, setProjects] = useState<Project[]>([]);
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [educations, setEducations] = useState<Education[]>([]);
-  const [skills, setSkills] = useState<Skill[]>([]);
 
-  // Editing state for modals/forms
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
-
-  const [editingExp, setEditingExp] = useState<Experience | null>(null);
-  const [isExpModalOpen, setIsExpModalOpen] = useState(false);
-
-  const [editingEdu, setEditingEdu] = useState<Education | null>(null);
-  const [isEduModalOpen, setIsEduModalOpen] = useState(false);
-
-  // Check initial auth status via cookie
+  // 1. Check existing session on mount
   useEffect(() => {
-    async function checkAuthStatus() {
+    async function verifyAuth() {
       try {
-        const res = await fetch('/api/admin/auth');
-        const data = await res.json();
-        if (data.authenticated) {
+        const res = await fetch('/api/admin/portfolio');
+        if (res.ok) {
           setIsAuthenticated(true);
-          fetchPortfolioData();
+          const json = await res.json();
+          if (json.data) {
+            setPersonalInfo(json.data.personalInfo || personalInfo);
+            setExperiences(json.data.experiences || []);
+            setEducations(json.data.educations || []);
+          }
+          setDbStatus({
+            isConnected: json.isConnected,
+            message: json.message || '',
+            source: json.source || '',
+          });
         }
       } catch {
         // Not authenticated
@@ -164,37 +143,66 @@ export default function AdminPage() {
         setCheckingAuth(false);
       }
     }
-    checkAuthStatus();
+    verifyAuth();
   }, []);
 
-  // Fetch portfolio data
-  const fetchPortfolioData = async () => {
-    setLoading(true);
+  // 2. Fetch Projects, Skills, Presence, and Audit Logs once authenticated
+  const fetchAllAdminData = async () => {
+    if (!isAuthenticated) return;
     try {
-      const res = await fetch('/api/admin/portfolio');
-      if (res.ok) {
-        const result = await res.json();
-        setDbStatus({
-          isConnected: result.isConnected,
-          message: result.message,
-          source: result.source,
-        });
-        if (result.data) {
-          if (result.data.personalInfo) setPersonalInfo(result.data.personalInfo);
-          if (result.data.projects) setProjects(result.data.projects);
-          if (result.data.experiences) setExperiences(result.data.experiences);
-          if (result.data.educations) setEducations(result.data.educations);
-          if (result.data.skills) setSkills(result.data.skills);
-        }
+      setLoadingProjects(true);
+      // Fetch Projects
+      const projRes = await fetch('/api/admin/projects');
+      if (projRes.ok) {
+        const projData = await projRes.json();
+        setProjects(projData.projects || []);
       }
-    } catch (err) {
-      console.error('Failed to load portfolio data:', err);
+
+      // Fetch Skills
+      const skillRes = await fetch('/api/admin/skills');
+      if (skillRes.ok) {
+        const skillData = await skillRes.json();
+        setSkills(skillData.skills || []);
+      }
+
+      // Fetch Presence
+      const presenceRes = await fetch('/api/analytics/presence');
+      if (presenceRes.ok) {
+        const presenceData = await presenceRes.json();
+        setOnlineCount(presenceData.onlineCount || 0);
+      }
+
+      // Fetch Audit Logs
+      const auditRes = await fetch('/api/admin/audit-logs');
+      if (auditRes.ok) {
+        const auditData = await auditRes.json();
+        setAuditLogs(auditData.logs || []);
+      }
+    } catch {
+      // Fail safely
     } finally {
-      setLoading(false);
+      setLoadingProjects(false);
     }
   };
 
-  // Handle Passcode Submission
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchAllAdminData();
+      // Presence polling
+      const presenceInterval = setInterval(async () => {
+        try {
+          const res = await fetch('/api/analytics/presence');
+          if (res.ok) {
+            const data = await res.json();
+            setOnlineCount(data.onlineCount || 0);
+          }
+        } catch {}
+      }, 5000);
+      return () => clearInterval(presenceInterval);
+    }
+  }, [isAuthenticated]);
+
+  // Handle Login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -205,88 +213,54 @@ export default function AdminPage() {
         body: JSON.stringify({ passcode }),
       });
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.success) {
         setIsAuthenticated(true);
-        fetchPortfolioData();
       } else {
         setAuthError(data.error || 'Invalid passcode');
       }
     } catch {
-      setAuthError('Connection error. Please try again.');
+      setAuthError('Authentication request failed. Check server status.');
     }
   };
 
-  // Handle Logout
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/admin/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'logout' }),
-      });
-    } catch {
-      // Ignore
-    }
-    setIsAuthenticated(false);
-    setPasscode('');
-    setActiveTab('overview');
-  };
-
-  // Handle Emergency Reset via Master Recovery Key
-  const handleEmergencyReset = async (e: React.FormEvent) => {
+  // Handle Master Key Recovery
+  const handleRecoveryReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
     setRecoverySuccess('');
-
-    if (!recoveryKey.trim()) {
-      setAuthError('Please enter your Master Recovery Key.');
-      return;
-    }
-    if (!newPasscodeReset || newPasscodeReset.length < 4) {
-      setAuthError('New passcode must be at least 4 characters long.');
-      return;
-    }
     if (newPasscodeReset !== confirmPasscodeReset) {
-      setAuthError('New passcode and confirmation passcode do not match.');
+      setAuthError('New passcodes do not match.');
       return;
     }
-
     try {
       const res = await fetch('/api/admin/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'reset_passcode',
-          recoveryKey: recoveryKey.trim(),
-          newPasscode: newPasscodeReset.trim(),
+          recoveryKey,
+          newPasscode: newPasscodeReset,
         }),
       });
       const data = await res.json();
-      if (res.ok) {
-        setRecoverySuccess('Passcode successfully reset! Unlocking Studio...');
+      if (res.ok && data.success) {
+        setRecoverySuccess(data.message);
         setTimeout(() => {
           setIsAuthenticated(true);
-          fetchPortfolioData();
-          setAuthMode('login');
-          setRecoveryKey('');
-          setNewPasscodeReset('');
-          setConfirmPasscodeReset('');
-          setRecoverySuccess('');
         }, 1200);
       } else {
-        setAuthError(data.error || 'Failed to reset passcode.');
+        setAuthError(data.error || 'Emergency recovery failed.');
       }
     } catch {
-      setAuthError('Network error. Please try again.');
+      setAuthError('Recovery request failed.');
     }
   };
 
-  // Handle Send Email OTP
+  // Handle Email OTP Send
   const handleSendEmailOtp = async () => {
     setSendingOtp(true);
     setAuthError('');
     setOtpSentNotice(null);
-    setDevOtpHint(null);
     try {
       const res = await fetch('/api/admin/auth', {
         method: 'POST',
@@ -294,1055 +268,986 @@ export default function AdminPage() {
         body: JSON.stringify({ action: 'send_email_otp' }),
       });
       const data = await res.json();
-      if (res.ok) {
-        setOtpSentNotice(data.message || `Verification OTP sent to ${data.adminEmail || 'your email'}!`);
+      if (res.ok && data.success) {
+        setOtpSentNotice(data.message);
         if (data.devOtp) {
-          setDevOtpHint(`Dev Code: ${data.devOtp}`);
+          setDevOtpHint(data.devOtp);
         }
-        if (data.adminEmail) {
-          setAdminEmail(data.adminEmail);
-        }
-        setOtpCooldown(45);
-        const timer = setInterval(() => {
-          setOtpCooldown((prev) => {
-            if (prev <= 1) {
-              clearInterval(timer);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
+        setOtpCooldown(60);
       } else {
-        setAuthError(data.error || 'Failed to send OTP.');
+        setAuthError(data.error || 'Failed to dispatch OTP.');
       }
     } catch {
-      setAuthError('Network error while requesting verification OTP.');
+      setAuthError('Network error while requesting OTP.');
     } finally {
       setSendingOtp(false);
     }
   };
 
-  // Handle Verify Email OTP & Reset Passcode
+  // Handle Email OTP Verify & Reset
   const handleVerifyEmailOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
-    setRecoverySuccess('');
-
     if (!otpCode || otpCode.trim().length !== 6) {
-      setAuthError('Please enter the 6-digit OTP code sent to your email.');
-      return;
-    }
-    if (!otpNewPasscode || otpNewPasscode.length < 4) {
-      setAuthError('New passcode must be at least 4 characters.');
+      setAuthError('Please enter a 6-digit verification code.');
       return;
     }
     if (otpNewPasscode !== otpConfirmPasscode) {
-      setAuthError('New passcode and confirm passcode do not match.');
+      setAuthError('New passcodes do not match.');
       return;
     }
-
     try {
       const res = await fetch('/api/admin/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'verify_email_otp',
-          otp: otpCode.trim(),
-          newPasscode: otpNewPasscode.trim(),
+          otpCode: otpCode.trim(),
+          newPasscode: otpNewPasscode,
         }),
       });
       const data = await res.json();
-      if (res.ok) {
-        setRecoverySuccess('Passcode reset successfully via Email OTP! Unlocking Studio...');
+      if (res.ok && data.success) {
+        setRecoverySuccess(data.message);
         setTimeout(() => {
           setIsAuthenticated(true);
-          fetchPortfolioData();
-          setAuthMode('login');
-          setOtpCode('');
-          setOtpNewPasscode('');
-          setOtpConfirmPasscode('');
-          setRecoverySuccess('');
         }, 1200);
       } else {
-        setAuthError(data.error || 'Failed to verify OTP.');
+        setAuthError(data.error || 'Invalid or expired OTP code.');
       }
     } catch {
-      setAuthError('Network error while verifying OTP.');
+      setAuthError('Verification failed.');
     }
   };
 
-  // Fetch Analytics & Visitor Intelligence
-  const fetchAnalytics = async () => {
-    setLoadingAnalytics(true);
-    try {
-      const res = await fetch('/api/admin/analytics');
-      if (res.ok) {
-        const data = await res.json();
-        setAnalyticsData(data);
-      }
-    } catch (err) {
-      console.error('Failed to load analytics:', err);
-    } finally {
-      setLoadingAnalytics(false);
-    }
+  // Handle Logout
+  const handleLogout = async () => {
+    document.cookie = 'portfolio_admin_token=; Max-Age=0; path=/;';
+    setIsAuthenticated(false);
+    setPasscode('');
   };
 
-  useEffect(() => {
-    if (isAuthenticated && activeTab === 'analytics') {
-      fetchAnalytics();
-    }
-  }, [isAuthenticated, activeTab]);
+  // Handle Project Save from Modal (Create or Edit)
+  const handleSaveProjectFromModal = async (projectData: Partial<Project>) => {
+    const isEdit = Boolean(selectedProjectForModal?._id || selectedProjectForModal?.slug);
+    const url = isEdit
+      ? `/api/admin/projects/${selectedProjectForModal?._id || selectedProjectForModal?.slug}`
+      : '/api/admin/projects';
+    const method = isEdit ? 'PUT' : 'POST';
 
-  // Handle Passcode Update from Security Tab
-  const handleChangePasscode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSecurityMsg(null);
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(projectData),
+    });
 
-    if (!currentPasscode) {
-      setSecurityMsg({ type: 'error', text: 'Please enter your current passcode.' });
-      return;
-    }
-    if (!newPasscode || newPasscode.length < 4) {
-      setSecurityMsg({ type: 'error', text: 'New passcode must be at least 4 characters.' });
-      return;
-    }
-    if (newPasscode !== confirmPasscode) {
-      setSecurityMsg({ type: 'error', text: 'New passcode and confirmation do not match.' });
-      return;
+    if (!res.ok) {
+      const errJson = await res.json();
+      throw new Error(errJson.error || 'Failed to save project');
     }
 
-    setIsUpdatingPasscode(true);
+    setSaveStatus('Project saved successfully!');
+    setTimeout(() => setSaveStatus(null), 3000);
+    await fetchAllAdminData();
+  };
+
+  // Handle Project Delete
+  const handleDeleteProject = async (p: Project) => {
+    if (!confirm(`Are you sure you want to delete project "${p.name}"?`)) return;
     try {
-      const res = await fetch('/api/admin/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'change_passcode',
-          currentPasscode,
-          newPasscode,
-        }),
+      const res = await fetch(`/api/admin/projects/${p._id || p.slug}`, {
+        method: 'DELETE',
       });
-      const data = await res.json();
       if (res.ok) {
-        setSecurityMsg({ type: 'success', text: data.message || 'Passcode updated successfully!' });
-        setCurrentPasscode('');
-        setNewPasscode('');
-        setConfirmPasscode('');
-      } else {
-        setSecurityMsg({ type: 'error', text: data.error || 'Failed to update passcode.' });
-      }
-    } catch {
-      setSecurityMsg({ type: 'error', text: 'Connection error while updating passcode.' });
-    } finally {
-      setIsUpdatingPasscode(false);
-    }
-  };
-
-  // Save changes to database
-  const saveSection = async (section: string, data: unknown) => {
-    setSaveStatus('Saving...');
-    try {
-      const res = await fetch('/api/admin/portfolio', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'update_section', section, data }),
-      });
-      const result = await res.json();
-      if (res.ok) {
-        setSaveStatus('Saved successfully!');
+        setSaveStatus(`Deleted ${p.name}`);
         setTimeout(() => setSaveStatus(null), 3000);
-      } else {
-        setSaveStatus(result.message || 'Error saving to MongoDB');
-        setTimeout(() => setSaveStatus(null), 5000);
+        await fetchAllAdminData();
       }
     } catch {
-      setSaveStatus('Failed to save. Check server logs.');
-      setTimeout(() => setSaveStatus(null), 4000);
+      alert('Failed to delete project');
     }
   };
 
-  // Sync initial static data to MongoDB Atlas
+  // Handle Project Status Toggle
+  const handleToggleProjectStatus = async (p: Project, nextStatus: 'published' | 'draft' | 'archived') => {
+    try {
+      const res = await fetch(`/api/admin/projects/${p._id || p.slug}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      if (res.ok) {
+        await fetchAllAdminData();
+      }
+    } catch {}
+  };
+
+  // Handle Project Feature Toggle
+  const handleToggleFeatured = async (p: Project) => {
+    try {
+      const res = await fetch(`/api/admin/projects/${p._id || p.slug}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featured: !p.featured }),
+      });
+      if (res.ok) {
+        await fetchAllAdminData();
+      }
+    } catch {}
+  };
+
+  // Handle Move Up / Move Down Ordering
+  const handleMoveProject = async (index: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === projects.length - 1) return;
+
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    const reordered = [...projects];
+    const temp = reordered[index];
+    reordered[index] = reordered[targetIndex];
+    reordered[targetIndex] = temp;
+
+    const payload = reordered.map((proj, idx) => ({
+      id: proj._id || proj.slug,
+      sortOrder: idx,
+    }));
+
+    setProjects(reordered);
+
+    try {
+      await fetch('/api/admin/projects/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: payload }),
+      });
+    } catch {
+      await fetchAllAdminData();
+    }
+  };
+
+  // Sync Initial Projects & Data
   const handleSyncInitialData = async () => {
-    if (!confirm('This will seed your MongoDB Atlas database with all existing portfolio data. Proceed?')) return;
-    setSaveStatus('Seeding MongoDB Atlas...');
+    setLoading(true);
     try {
       const res = await fetch('/api/admin/portfolio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'sync_initial' }),
       });
-      const result = await res.json();
+      const data = await res.json();
       if (res.ok) {
-        setSaveStatus('Database Seeded Successfully!');
-        fetchPortfolioData();
-        setTimeout(() => setSaveStatus(null), 4000);
-      } else {
-        alert(result.message || 'Failed to seed MongoDB Atlas.');
-        setSaveStatus(null);
+        setSaveStatus(data.message || 'Synced all projects and details into MongoDB Atlas!');
+        setTimeout(() => setSaveStatus(null), 3000);
+        await fetchAllAdminData();
       }
     } catch {
-      alert('Sync failed. Please verify MONGODB_URI in .env.local.');
-      setSaveStatus(null);
+      setSaveStatus('Error syncing data.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // ----------------------------------------------------
-  // PASSCODE GATE SCREEN
-  // ----------------------------------------------------
+  // Save Settings (PersonalInfo)
+  const handleSaveSettings = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(personalInfo),
+      });
+      if (res.ok) {
+        setSaveStatus('Settings updated successfully!');
+        setTimeout(() => setSaveStatus(null), 3000);
+      }
+    } catch {
+      setSaveStatus('Failed to update settings.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Loading skeleton during auth check
   if (checkingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-        <div className="flex items-center gap-3 font-mono text-sm">
-          <RefreshCw className="w-4 h-4 animate-spin text-primary" />
-          <span>Verifying studio credentials...</span>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <div className="flex items-center gap-3 text-primary font-mono text-sm">
+          <RefreshCw className="w-5 h-5 animate-spin" />
+          <span>Verifying Admin Authorization...</span>
         </div>
       </div>
     );
   }
 
+  // =========================================================================
+  // LOGIN / AUTH GATE
+  // =========================================================================
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4 bg-background text-foreground relative overflow-hidden">
-        <div className="w-full max-w-md p-8 rounded-2xl bg-card border border-border shadow-2xl space-y-6 relative z-10 card-beam">
-          <div className="flex flex-col items-center text-center space-y-2">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-border-accent flex items-center justify-center text-primary mb-2">
-              <Lock className="w-6 h-6" />
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 sm:p-6 text-foreground relative overflow-hidden">
+        <div className="relative w-full max-w-md p-8 rounded-3xl bg-card border border-border shadow-2xl space-y-6">
+          <div className="text-center space-y-2">
+            <div className="inline-flex p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary mb-2">
+              <ShieldCheck className="w-8 h-8" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <h1 className="text-2xl font-bold tracking-tight">Portfolio Owner Panel</h1>
+            <p className="text-xs font-mono text-muted-foreground">
               {authMode === 'login'
-                ? 'Admin Studio'
+                ? 'Enter master administrative passkey'
                 : authMode === 'email_otp'
-                ? 'Email OTP Reset'
-                : 'Master Key Reset'}
-            </h1>
-            <p className="text-xs text-muted-foreground font-mono">
-              {authMode === 'login'
-                ? 'Protected Developer Portal // Restricted Access'
-                : authMode === 'email_otp'
-                ? 'Verify 6-Digit Code sent to your inbox'
-                : 'Emergency Recovery // Master Key Verification'}
+                ? 'Verify 6-digit OTP sent to rahulraj2148@gmail.com'
+                : 'Emergency Recovery via Master Key'}
             </p>
           </div>
 
+          {authError && (
+            <div className="p-3 rounded-xl bg-destructive/15 border border-destructive/30 text-destructive text-xs font-mono text-center">
+              {authError}
+            </div>
+          )}
+
+          {recoverySuccess && (
+            <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-mono text-center">
+              {recoverySuccess}
+            </div>
+          )}
+
+          {/* Mode 1: Standard Login */}
           {authMode === 'login' && (
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-mono text-muted-foreground block">
-                  Security Passcode
-                </label>
+                <label className="text-xs font-mono text-muted-foreground">Admin Passcode</label>
                 <div className="relative">
                   <input
                     type={showPasscode ? 'text' : 'password'}
                     value={passcode}
                     onChange={(e) => setPasscode(e.target.value)}
-                    placeholder="Enter secret PIN (e.g. rahul2148)"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all pr-10"
+                    placeholder="Enter passkey..."
                     autoFocus
+                    className="w-full px-4 py-2.5 rounded-xl bg-surface border border-border text-foreground text-sm font-mono focus:outline-none focus:border-primary pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPasscode(!showPasscode)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                    className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
                   >
                     {showPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
-              {authError && (
-                <p className="text-xs font-mono text-destructive bg-destructive/10 p-2.5 rounded-xl border border-destructive/20 text-center">
-                  {authError}
-                </p>
-              )}
-
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-95 transition-opacity flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                className="w-full py-2.5 rounded-xl bg-primary hover:opacity-90 text-primary-foreground font-mono font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-primary/20"
               >
-                <ShieldCheck className="w-4 h-4" />
-                <span>Unlock Admin Dashboard</span>
+                <Lock className="w-3.5 h-3.5" />
+                <span>Unlock Control Studio</span>
               </button>
 
-              <div className="pt-2 flex flex-col items-center gap-2 text-xs font-mono">
+              <div className="pt-2 flex items-center justify-between text-[11px] font-mono">
                 <button
                   type="button"
                   onClick={() => {
                     setAuthMode('email_otp');
                     setAuthError('');
-                    setOtpSentNotice(null);
-                    setDevOtpHint(null);
                   }}
-                  className="text-primary hover:underline cursor-pointer flex items-center gap-1.5"
+                  className="text-primary hover:underline"
                 >
-                  <Mail className="w-3.5 h-3.5" />
-                  <span>Forgot Passcode? Send OTP to Email</span>
+                  📧 Reset via Email OTP
                 </button>
-
                 <button
                   type="button"
                   onClick={() => {
                     setAuthMode('recovery');
                     setAuthError('');
                   }}
-                  className="text-muted-foreground hover:text-foreground text-[11px] cursor-pointer"
+                  className="text-muted-foreground hover:text-foreground"
                 >
-                  Or reset via Master Recovery Key
+                  Forgot Passcode?
                 </button>
               </div>
             </form>
           )}
 
+          {/* Mode 2: Email OTP Reset */}
           {authMode === 'email_otp' && (
-            <form onSubmit={handleVerifyEmailOtp} className="space-y-3.5">
-              <div className="p-3 rounded-xl bg-primary/10 border border-border-accent text-xs font-mono space-y-1.5">
-                <div className="flex items-center justify-between font-bold text-primary">
-                  <div className="flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5" />
-                    <span>Email OTP Verification</span>
-                  </div>
-                  <span className="text-[10px] text-muted-foreground font-normal">10m validity</span>
-                </div>
-                <p className="text-muted-foreground text-[11px] leading-relaxed">
-                  Send a one-time 6-digit code to <code className="text-primary font-bold">{adminEmail}</code>.
-                </p>
-              </div>
-
-              {/* Send / Resend OTP Trigger Button */}
-              <div>
+            <div className="space-y-4">
+              <div className="p-3 rounded-xl bg-surface-elevated/50 border border-border text-xs font-mono space-y-2">
+                <div className="text-muted-foreground">Target Recipient:</div>
+                <div className="font-bold text-foreground">{adminEmail}</div>
                 <button
                   type="button"
                   disabled={sendingOtp || otpCooldown > 0}
                   onClick={handleSendEmailOtp}
-                  className="w-full py-2 px-3 rounded-xl bg-surface hover:bg-surface-elevated border border-border text-xs font-mono text-foreground flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
+                  className="w-full mt-2 py-2 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary font-bold transition-colors disabled:opacity-50"
                 >
-                  <Send className={`w-3.5 h-3.5 text-primary ${sendingOtp ? 'animate-spin' : ''}`} />
-                  <span>
-                    {sendingOtp
-                      ? 'Sending OTP...'
-                      : otpCooldown > 0
-                      ? `Resend Code in ${otpCooldown}s`
-                      : `Send 6-Digit OTP to ${adminEmail}`}
-                  </span>
+                  {sendingOtp
+                    ? 'Dispatching OTP...'
+                    : otpCooldown > 0
+                    ? `Resend available in ${otpCooldown}s`
+                    : 'Send 6-Digit OTP Email'}
                 </button>
               </div>
 
               {otpSentNotice && (
-                <div className="p-2 rounded-xl bg-primary/10 border border-border-accent text-xs font-mono text-primary text-center">
+                <div className="p-2 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-mono">
                   {otpSentNotice}
                 </div>
               )}
 
               {devOtpHint && (
-                <div className="p-2 rounded-lg bg-surface border border-dashed border-emerald-500/40 text-xs font-mono text-emerald-400 text-center">
-                  ⚡ {devOtpHint}
+                <div className="p-2 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-mono">
+                  <strong>Simulated OTP Code:</strong> {devOtpHint}
                 </div>
               )}
 
-              <div className="space-y-1">
-                <label className="text-xs font-mono text-muted-foreground block">
-                  Enter 6-Digit Code
-                </label>
+              <form onSubmit={handleVerifyEmailOtp} className="space-y-3">
                 <input
                   type="text"
                   maxLength={6}
                   value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                  placeholder="e.g. 849201"
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground font-mono text-center tracking-[6px] text-base font-bold placeholder:tracking-normal placeholder:text-xs placeholder:font-normal placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
-                  autoFocus
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  placeholder="Enter 6-digit OTP code"
+                  className="w-full px-4 py-2 rounded-xl bg-surface border border-border text-foreground text-center text-base tracking-widest font-mono focus:outline-none focus:border-primary"
                 />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-mono text-muted-foreground block">
-                  New Passcode (min 4 chars)
-                </label>
                 <input
                   type="password"
                   value={otpNewPasscode}
                   onChange={(e) => setOtpNewPasscode(e.target.value)}
-                  placeholder="Enter new passkey"
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
+                  placeholder="New Admin Passcode"
+                  className="w-full px-4 py-2 rounded-xl bg-surface border border-border text-foreground text-xs font-mono focus:outline-none focus:border-primary"
                 />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-mono text-muted-foreground block">
-                  Confirm New Passcode
-                </label>
                 <input
                   type="password"
                   value={otpConfirmPasscode}
                   onChange={(e) => setOtpConfirmPasscode(e.target.value)}
-                  placeholder="Re-enter new passkey"
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
+                  placeholder="Confirm New Passcode"
+                  className="w-full px-4 py-2 rounded-xl bg-surface border border-border text-foreground text-xs font-mono focus:outline-none focus:border-primary"
                 />
-              </div>
-
-              {authError && (
-                <p className="text-xs font-mono text-destructive bg-destructive/10 p-2.5 rounded-xl border border-destructive/20 text-center">
-                  {authError}
-                </p>
-              )}
-
-              {recoverySuccess && (
-                <p className="text-xs font-mono text-emerald-500 bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/20 text-center">
-                  {recoverySuccess}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-95 transition-opacity flex items-center justify-center gap-2 cursor-pointer shadow-xs"
-              >
-                <ShieldCheck className="w-4 h-4" />
-                <span>Verify OTP & Unlock Studio</span>
-              </button>
-
-              <div className="pt-1 flex items-center justify-between text-xs font-mono">
+                <button
+                  type="submit"
+                  className="w-full py-2.5 rounded-xl bg-primary hover:opacity-90 text-primary-foreground font-mono font-bold text-xs transition-all shadow-md shadow-primary/20"
+                >
+                  Verify &amp; Unlock Panel
+                </button>
                 <button
                   type="button"
                   onClick={() => {
                     setAuthMode('login');
                     setAuthError('');
                   }}
-                  className="text-muted-foreground hover:text-foreground cursor-pointer"
+                  className="w-full py-1 text-center text-xs font-mono text-muted-foreground hover:text-foreground"
                 >
-                  ← Standard Login
+                  ← Back to Login
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode('recovery');
-                    setAuthError('');
-                  }}
-                  className="text-primary hover:underline cursor-pointer"
-                >
-                  Use Master Key →
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           )}
 
+          {/* Mode 3: Master Key Recovery */}
           {authMode === 'recovery' && (
-            <form onSubmit={handleEmergencyReset} className="space-y-3.5">
-              <div className="p-3 rounded-xl bg-primary/10 border border-border-accent text-xs font-mono space-y-1">
-                <div className="flex items-center gap-1.5 font-bold text-primary">
-                  <KeyRound className="w-3.5 h-3.5" />
-                  <span>Master Key Emergency Reset</span>
-                </div>
-                <p className="text-muted-foreground text-[11px] leading-relaxed">
-                  Enter the recovery key from <code className="text-primary font-bold">.env.local</code> (ADMIN_RECOVERY_KEY) to reset your passkey instantly.
-                </p>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-mono text-muted-foreground block">
-                  Master Recovery Key
-                </label>
-                <input
-                  type="password"
-                  value={recoveryKey}
-                  onChange={(e) => setRecoveryKey(e.target.value)}
-                  placeholder="e.g. RAHUL-RECOVER-2026-SECRET"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
-                  autoFocus
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-mono text-muted-foreground block">
-                  New Passcode (min 4 chars)
-                </label>
-                <input
-                  type="password"
-                  value={newPasscodeReset}
-                  onChange={(e) => setNewPasscodeReset(e.target.value)}
-                  placeholder="Enter new passkey"
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-mono text-muted-foreground block">
-                  Confirm New Passcode
-                </label>
-                <input
-                  type="password"
-                  value={confirmPasscodeReset}
-                  onChange={(e) => setConfirmPasscodeReset(e.target.value)}
-                  placeholder="Re-enter new passkey"
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
-                />
-              </div>
-
-              {authError && (
-                <p className="text-xs font-mono text-destructive bg-destructive/10 p-2.5 rounded-xl border border-destructive/20 text-center">
-                  {authError}
-                </p>
-              )}
-
-              {recoverySuccess && (
-                <p className="text-xs font-mono text-emerald-500 bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/20 text-center">
-                  {recoverySuccess}
-                </p>
-              )}
-
+            <form onSubmit={handleRecoveryReset} className="space-y-3">
+              <input
+                type="text"
+                value={recoveryKey}
+                onChange={(e) => setRecoveryKey(e.target.value)}
+                placeholder="ADMIN_RECOVERY_KEY"
+                className="w-full px-4 py-2 rounded-xl bg-surface border border-border text-foreground text-xs font-mono focus:outline-none focus:border-primary"
+              />
+              <input
+                type="password"
+                value={newPasscodeReset}
+                onChange={(e) => setNewPasscodeReset(e.target.value)}
+                placeholder="New Passcode"
+                className="w-full px-4 py-2 rounded-xl bg-surface border border-border text-foreground text-xs font-mono focus:outline-none focus:border-primary"
+              />
+              <input
+                type="password"
+                value={confirmPasscodeReset}
+                onChange={(e) => setConfirmPasscodeReset(e.target.value)}
+                placeholder="Confirm New Passcode"
+                className="w-full px-4 py-2 rounded-xl bg-surface border border-border text-foreground text-xs font-mono focus:outline-none focus:border-primary"
+              />
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-95 transition-opacity flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                className="w-full py-2.5 rounded-xl bg-primary hover:opacity-90 text-primary-foreground font-mono font-bold text-xs"
               >
-                <Key className="w-4 h-4" />
-                <span>Reset Passcode & Unlock</span>
+                Reset via Master Key
               </button>
-
-              <div className="pt-1 flex items-center justify-between text-xs font-mono">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode('login');
-                    setAuthError('');
-                  }}
-                  className="text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  ← Standard Login
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode('email_otp');
-                    setAuthError('');
-                  }}
-                  className="text-primary hover:underline cursor-pointer"
-                >
-                  Reset via Email OTP →
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('login');
+                  setAuthError('');
+                }}
+                className="w-full py-1 text-center text-xs font-mono text-muted-foreground hover:text-foreground"
+              >
+                ← Back to Login
+              </button>
             </form>
           )}
-
-          <div className="pt-4 border-t border-border flex items-center justify-between text-[11px] font-mono text-muted-foreground">
-            <Link href="/" className="hover:text-primary transition-colors flex items-center gap-1">
-              <ArrowLeft className="w-3 h-3" />
-              <span>Back to Portfolio</span>
-            </Link>
-            <span>Passcode & Recovery in .env.local</span>
-          </div>
         </div>
       </div>
     );
   }
 
-  // ----------------------------------------------------
-  // AUTHENTICATED ADMIN STUDIO DASHBOARD
-  // ----------------------------------------------------
+  // Filter projects
+  const filteredProjects = projects.filter((p) => {
+    if (projectFilter === 'published') return p.status === 'published';
+    if (projectFilter === 'draft') return p.status === 'draft';
+    if (projectFilter === 'archived') return p.status === 'archived';
+    if (!projectSearch.trim()) return true;
+    const term = projectSearch.toLowerCase();
+    return (
+      p.name.toLowerCase().includes(term) ||
+      p.slug.toLowerCase().includes(term) ||
+      p.category.toLowerCase().includes(term) ||
+      p.technologies?.some((t) => t.toLowerCase().includes(term))
+    );
+  });
+
+  // =========================================================================
+  // AUTHENTICATED SAAS-GRADE DASHBOARD
+  // =========================================================================
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Top Header */}
-      <header className="sticky top-0 z-40 bg-card/85 backdrop-blur-xl border-b border-border px-4 sm:px-8 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      {/* Top SaaS Header */}
+      <header className="sticky top-0 z-40 border-b border-border bg-card/90 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-xs">
+        <div className="flex items-center gap-4">
           <Link
             href="/"
-            className="p-2 rounded-xl bg-surface hover:bg-surface-elevated border border-border text-muted-foreground hover:text-foreground transition-colors"
-            title="Return to Main Website"
+            className="flex items-center gap-2.5 font-bold text-foreground text-sm hover:text-primary transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-mono font-black text-xs">
+              RR
+            </div>
+            <span className="hidden sm:inline">Rahul Raj — Portfolio Studio</span>
           </Link>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-foreground">Rahul Raj — Admin Studio</h1>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 border border-border-accent text-primary">
-                v2.0
-              </span>
-            </div>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  dbStatus.isConnected ? 'bg-emerald-500 animate-ping' : 'bg-amber-500'
-                }`}
-              />
-              <span className="text-xs font-mono text-muted-foreground">
-                {dbStatus.isConnected ? 'MongoDB Atlas Online' : 'Offline / Static Fallback Mode'}
-              </span>
-            </div>
-          </div>
+
+          {/* Real-time Online Badge */}
+          <button
+            onClick={() => setActiveTab('live')}
+            className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono hover:bg-emerald-500/20 transition-colors"
+            title="View Live Online Visitors"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <span className="font-bold">{onlineCount} Online</span>
+          </button>
         </div>
 
         <div className="flex items-center gap-3">
           {saveStatus && (
-            <div className="text-xs font-mono px-3 py-1.5 rounded-xl bg-primary/15 border border-border-accent text-primary animate-in fade-in">
+            <span className="text-xs font-mono text-primary bg-primary/10 px-3 py-1 rounded-lg border border-primary/20 animate-in fade-in">
               {saveStatus}
-            </div>
+            </span>
           )}
 
           <button
-            onClick={handleSyncInitialData}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface hover:bg-surface-elevated border border-border text-xs font-mono text-foreground transition-colors"
-            title="Seed existing projects and data to MongoDB Atlas"
+            onClick={() => {
+              setSelectedProjectForModal(null);
+              setIsProjectModalOpen(true);
+            }}
+            className="px-3.5 py-1.5 rounded-xl bg-primary hover:opacity-90 text-primary-foreground text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-md shadow-primary/20"
           >
-            <Database className="w-3.5 h-3.5 text-primary" />
-            <span>Sync Initial Data</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>+ Add Project</span>
           </button>
 
           <Link
             href="/"
             target="_blank"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface hover:bg-surface-elevated border border-border text-xs font-mono text-foreground transition-colors"
           >
             <span>Live Site</span>
-            <ExternalLink className="w-3.5 h-3.5" />
+            <ExternalLink className="w-3 h-3" />
           </Link>
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface hover:bg-surface-elevated border border-border text-xs font-mono text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-            title="Lock and Log Out"
+            className="p-2 rounded-xl bg-surface hover:bg-muted border border-border text-muted-foreground hover:text-destructive transition-colors"
+            title="Log Out"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Logout</span>
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8">
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 border-b border-border pb-4 overflow-x-auto select-none font-mono text-xs">
+      {/* Main SaaS Layout: Sidebar + Viewport */}
+      <div className="flex-1 flex flex-col md:flex-row max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 gap-6">
+        {/* Navigation Sidebar */}
+        <aside className="w-full md:w-60 shrink-0 space-y-1 font-mono text-xs select-none">
+          <div className="px-3 py-2 text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
+            System Operations
+          </div>
+
           {[
-            { id: 'overview', label: 'Overview & Stats', icon: Layers },
-            { id: 'analytics', label: 'Visitors & Traffic', icon: Users },
-            { id: 'profile', label: 'Profile & Bio', icon: User },
-            { id: 'cv', label: 'CV & Resume', icon: FileText },
-            { id: 'education', label: 'Education', icon: GraduationCap },
-            { id: 'experience', label: 'Experience', icon: Briefcase },
-            { id: 'projects', label: 'Projects & Works', icon: Code2 },
-            { id: 'security', label: 'Security & Passkey', icon: KeyRound },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
+            { id: 'overview', label: 'Overview & KPIs', icon: Layers },
+            { id: 'projects', label: 'Projects Manager', icon: FolderKanban, badge: projects.length },
+            { id: 'skills', label: 'Skills Catalog', icon: Code2, badge: skills.length },
+            { id: 'live', label: 'Live Visitors', icon: Activity, live: true },
+            { id: 'analytics', label: 'Analytics & Charts', icon: BarChart3 },
+          ].map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
             return (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all whitespace-nowrap ${
+                key={item.id}
+                onClick={() => setActiveTab(item.id as typeof activeTab)}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
                   isActive
-                    ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+                    ? 'bg-primary text-primary-foreground font-bold shadow-xs'
                     : 'text-muted-foreground hover:text-foreground hover:bg-surface'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{tab.label}</span>
+                <div className="flex items-center gap-2.5">
+                  <Icon className="w-4 h-4" />
+                  <span>{item.label}</span>
+                </div>
+                {item.live && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                )}
+                {item.badge !== undefined && (
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${
+                    isActive ? 'bg-black/20 text-white' : 'bg-surface-elevated text-muted-foreground'
+                  }`}>
+                    {item.badge}
+                  </span>
+                )}
               </button>
             );
           })}
-        </div>
 
-        {/* Tab Contents */}
-        <main className="mt-8 space-y-8">
+          <div className="pt-4 px-3 py-2 text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
+            Resume &amp; Content
+          </div>
+
+          {[
+            { id: 'settings', label: 'Portfolio Settings', icon: Settings },
+            { id: 'experience', label: 'Experience History', icon: Briefcase },
+            { id: 'education', label: 'Education & Scores', icon: GraduationCap },
+            { id: 'security', label: 'Security & Passkey', icon: KeyRound },
+            { id: 'audit', label: 'Audit Log', icon: Clock },
+          ].map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id as typeof activeTab)}
+                className={`w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl transition-all ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground font-bold shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-surface'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </aside>
+
+        {/* Viewport Content */}
+        <main className="flex-1 min-w-0">
           {/* ====================================================
-              TAB 1: OVERVIEW & STATS
+              TAB: OVERVIEW
               ==================================================== */}
           {activeTab === 'overview' && (
-            <div className="space-y-6 animate-in fade-in duration-200">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-5 rounded-2xl bg-card border border-border shadow-xs card-beam">
-                  <span className="text-xs font-mono text-muted-foreground uppercase">Total Projects</span>
-                  <div className="text-3xl font-bold text-foreground mt-1">{projects.length}</div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {projects.filter((p) => p.tier === 'S').length} Tier S Flagships
+            <div className="space-y-6 animate-in fade-in duration-150">
+              {/* Top Banner */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-card border border-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-2">
+                  <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-mono">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>SaaS Portfolio Control Center</span>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+                    Welcome back, Rahul
+                  </h2>
+                  <p className="text-xs sm:text-sm text-muted-foreground max-w-xl">
+                    Manage your production projects, master skills catalog, and monitor real-time visitor telemetry in one unified internal studio.
                   </p>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-card border border-border shadow-xs card-beam">
-                  <span className="text-xs font-mono text-muted-foreground uppercase">Work Milestones</span>
-                  <div className="text-3xl font-bold text-primary mt-1">{experiences.length}</div>
-                  <p className="text-xs text-muted-foreground mt-1">Career positions & roles</p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-card border border-border shadow-xs card-beam">
-                  <span className="text-xs font-mono text-muted-foreground uppercase">Education Degrees</span>
-                  <div className="text-3xl font-bold text-foreground mt-1">{educations.length}</div>
-                  <p className="text-xs text-muted-foreground mt-1">Academic qualifications</p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-card border border-border shadow-xs card-beam">
-                  <span className="text-xs font-mono text-muted-foreground uppercase">Technical Skills</span>
-                  <div className="text-3xl font-bold text-emerald-500 mt-1">{skills.length}</div>
-                  <p className="text-xs text-muted-foreground mt-1">Core proficiencies cataloged</p>
-                </div>
-              </div>
-
-              {/* Visitor Intelligence Quick Access Banner */}
-              <div
-                onClick={() => setActiveTab('analytics')}
-                className="p-4 rounded-2xl bg-primary/10 border border-border-accent flex items-center justify-between cursor-pointer hover:bg-primary/15 transition-colors card-beam"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-primary text-primary-foreground">
-                    <Users className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold font-mono text-foreground flex items-center gap-1.5">
-                      <span>Visitor &amp; Recruiter Intelligence Live</span>
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px]">Tracking</span>
-                    </span>
-                    <p className="text-[11px] text-muted-foreground font-mono">
-                      Click to inspect real-time profile visits, unique guests, and recruiter check-ins
-                    </p>
-                  </div>
-                </div>
-                <span className="text-xs font-mono text-primary font-bold hidden sm:inline">
-                  View Analytics →
-                </span>
-              </div>
-
-              {/* Database Connection Card */}
-              <div className="p-6 rounded-2xl bg-card border border-border shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-primary/10 text-primary border border-border-accent">
-                      <Database className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-bold text-foreground">MongoDB Atlas Cloud Connection</h3>
-                      <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                        {dbStatus.message}
-                      </p>
-                    </div>
-                  </div>
-
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-mono font-bold ${
-                      dbStatus.isConnected
-                        ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                        : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-                    }`}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => {
+                      setSelectedProjectForModal(null);
+                      setIsProjectModalOpen(true);
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-primary hover:opacity-90 text-primary-foreground text-xs font-mono font-bold flex items-center justify-center gap-2 shadow-md shadow-primary/20"
                   >
-                    {dbStatus.isConnected ? 'CONNECTED' : 'ACTION REQUIRED'}
-                  </span>
-                </div>
+                    <Plus className="w-4 h-4" />
+                    <span>+ Add New Project</span>
+                  </button>
 
-                {!dbStatus.isConnected && (
-                  <div className="p-4 rounded-xl bg-surface border border-border space-y-2 text-xs text-muted-foreground leading-relaxed">
-                    <p className="font-semibold text-foreground">How to connect your free MongoDB Atlas cluster:</p>
-                    <ol className="list-decimal pl-5 space-y-1">
-                      <li>Create a free cluster on <a href="https://mongodb.com/cloud/atlas" target="_blank" rel="noreferrer" className="text-primary underline">MongoDB Atlas</a>.</li>
-                      <li>Copy your connection URI (e.g. <code className="font-mono text-primary">mongodb+srv://user:pass@cluster0.mongodb.net/portfolio</code>).</li>
-                      <li>Paste it into <code className="font-mono text-primary">.env.local</code> under <code className="font-mono text-primary">MONGODB_URI</code>.</li>
-                      <li>Restart your dev server. The dashboard will automatically switch to Live Database Mode!</li>
-                    </ol>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-3 pt-2">
                   <button
                     onClick={handleSyncInitialData}
-                    className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity flex items-center gap-2"
+                    className="px-4 py-2.5 rounded-xl bg-surface hover:bg-muted border border-border text-xs font-mono text-foreground flex items-center justify-center gap-2"
+                    title="Seed static portfolio data to MongoDB Atlas"
                   >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Sync Initial Portfolio Data to Atlas</span>
+                    <Database className="w-4 h-4 text-primary" />
+                    <span>Sync Initial Projects</span>
                   </button>
+                </div>
+              </div>
+
+              {/* Quick KPIs */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="p-5 rounded-2xl bg-card border border-border space-y-1 shadow-sm">
+                  <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
+                    <span>Live Online</span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-400">
+                    {onlineCount}
+                  </div>
+                  <div className="text-[11px] font-mono text-muted-foreground">Active in last 45s</div>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-card border border-border space-y-1 shadow-sm">
+                  <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
+                    <span>Published Projects</span>
+                    <FolderKanban className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-black font-mono text-foreground">
+                    {projects.filter((p) => p.status === 'published').length}
+                  </div>
+                  <div className="text-[11px] font-mono text-muted-foreground">
+                    {projects.filter((p) => p.status === 'draft').length} drafts in progress
+                  </div>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-card border border-border space-y-1 shadow-sm">
+                  <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
+                    <span>Master Skills</span>
+                    <Code2 className="w-4 h-4 text-cyan-400" />
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-black font-mono text-cyan-400">
+                    {skills.length}
+                  </div>
+                  <div className="text-[11px] font-mono text-muted-foreground">Reusable stack items</div>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-card border border-border space-y-1 shadow-sm">
+                  <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
+                    <span>Database Status</span>
+                    <Database className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className={`text-base font-bold font-mono truncate ${dbStatus.isConnected ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    {dbStatus.isConnected ? 'Atlas Live' : 'Fallback Mode'}
+                  </div>
+                  <div className="text-[11px] font-mono text-muted-foreground truncate">
+                    {dbStatus.message || 'Zero-crash fallback'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Projects Quick Preview */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-mono uppercase tracking-widest text-foreground font-bold">
+                    Active Projects Catalog ({projects.length})
+                  </h3>
                   <button
-                    onClick={fetchPortfolioData}
-                    className="px-4 py-2 rounded-xl bg-surface hover:bg-surface-elevated border border-border text-xs font-mono text-foreground transition-colors flex items-center gap-2"
+                    onClick={() => setActiveTab('projects')}
+                    className="text-xs font-mono text-primary hover:underline"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-                    <span>Refresh Status</span>
+                    View All in Manager →
                   </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {projects.slice(0, 6).map((p) => (
+                    <div
+                      key={p.slug}
+                      className="p-4 rounded-2xl bg-card border border-border flex flex-col justify-between space-y-3 shadow-sm hover:border-border-accent transition-all group"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-mono text-primary font-bold">{p.category}</span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold ${
+                              p.status === 'published'
+                                ? 'bg-emerald-500/20 text-emerald-400'
+                                : 'bg-amber-500/20 text-amber-400'
+                            }`}
+                          >
+                            {p.status}
+                          </span>
+                        </div>
+                        <h4 className="text-base font-bold text-foreground mt-1">{p.name}</h4>
+                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{p.tagline}</p>
+                      </div>
+
+                      <div className="pt-2 border-t border-border flex items-center justify-between text-xs font-mono">
+                        <button
+                          onClick={() => {
+                            setSelectedProjectForModal(p);
+                            setIsProjectModalOpen(true);
+                          }}
+                          className="text-primary hover:underline flex items-center gap-1"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          <span>Edit</span>
+                        </button>
+
+                        <a
+                          href={`/work/${p.slug}?preview=true`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-muted-foreground hover:text-foreground flex items-center gap-1"
+                        >
+                          <span>Preview</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           )}
 
           {/* ====================================================
-              TAB: VISITORS & TRAFFIC INTELLIGENCE
+              TAB: PROJECTS MANAGER (FULL CRUD + REORDERING)
               ==================================================== */}
-          {activeTab === 'analytics' && (
-            <div className="space-y-6 animate-in fade-in duration-200">
-              {/* Header with Refresh */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-card border border-border shadow-sm card-beam">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-primary/10 text-primary border border-border-accent">
-                    <Users className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-base font-bold text-foreground">Visitor &amp; Recruiter Intelligence</h2>
-                    <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                      Real-time telemetry of profile visits, anonymous guests &amp; verified recruiters
-                    </p>
-                  </div>
+          {activeTab === 'projects' && (
+            <div className="space-y-6 animate-in fade-in duration-150">
+              {/* Action Toolbar */}
+              <div className="p-4 rounded-2xl bg-card border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+                {/* Status filter pills */}
+                <div className="flex flex-wrap items-center gap-1.5 text-xs font-mono">
+                  {[
+                    { id: 'all', label: `All (${projects.length})` },
+                    { id: 'published', label: `Published (${projects.filter((p) => p.status === 'published').length})` },
+                    { id: 'draft', label: `Drafts (${projects.filter((p) => p.status === 'draft').length})` },
+                    { id: 'archived', label: `Archived (${projects.filter((p) => p.status === 'archived').length})` },
+                  ].map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={() => setProjectFilter(f.id as typeof projectFilter)}
+                      className={`px-3 py-1.5 rounded-lg transition-all ${
+                        projectFilter === f.id
+                          ? 'bg-primary text-primary-foreground font-bold shadow-xs'
+                          : 'bg-surface text-muted-foreground hover:text-foreground border border-border'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
                 </div>
 
+                {/* Search & Add */}
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={fetchAnalytics}
-                    disabled={loadingAnalytics}
-                    className="px-4 py-2 rounded-xl bg-surface hover:bg-surface-elevated border border-border text-xs font-mono text-foreground transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${loadingAnalytics ? 'animate-spin text-primary' : ''}`} />
-                    <span>{loadingAnalytics ? 'Syncing...' : 'Refresh Metrics'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* 4 KPI Metric Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-5 rounded-2xl bg-card border border-border shadow-xs card-beam">
-                  <span className="text-xs font-mono text-muted-foreground uppercase flex items-center justify-between">
-                    <span>Total Profile Views</span>
-                    <BarChart3 className="w-4 h-4 text-primary" />
-                  </span>
-                  <div className="text-3xl font-bold text-foreground mt-2">
-                    {analyticsData?.overview.totalViews ?? 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 font-mono">
-                    All-time page loads tracked
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-card border border-border shadow-xs card-beam">
-                  <span className="text-xs font-mono text-muted-foreground uppercase flex items-center justify-between">
-                    <span>Unique Guests</span>
-                    <Users className="w-4 h-4 text-emerald-400" />
-                  </span>
-                  <div className="text-3xl font-bold text-emerald-400 mt-2">
-                    {analyticsData?.overview.uniqueGuests ?? 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 font-mono">
-                    Anonymous unique visitors
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-card border border-border shadow-xs card-beam">
-                  <span className="text-xs font-mono text-muted-foreground uppercase flex items-center justify-between">
-                    <span>Logged-in Recruiters</span>
-                    <Briefcase className="w-4 h-4 text-primary" />
-                  </span>
-                  <div className="text-3xl font-bold text-primary mt-2">
-                    {analyticsData?.overview.totalRecruiters ?? 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 font-mono">
-                    Verified hiring leads &amp; clients
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-card border border-border shadow-xs card-beam">
-                  <span className="text-xs font-mono text-muted-foreground uppercase flex items-center justify-between">
-                    <span>Today&apos;s Activity</span>
-                    <Activity className="w-4 h-4 text-amber-400" />
-                  </span>
-                  <div className="text-3xl font-bold text-foreground mt-2">
-                    {analyticsData?.overview.todayViews ?? 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 font-mono">
-                    {analyticsData?.overview.todayGuests ?? 0} guests // {analyticsData?.overview.todayRecruiters ?? 0} recruiters
-                  </p>
-                </div>
-              </div>
-
-              {/* Recruiter & Client Directory Table */}
-              <div className="p-6 rounded-2xl bg-card border border-border shadow-sm space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
-                  <div>
-                    <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                      <Briefcase className="w-4 h-4 text-primary" />
-                      <span>Verified Recruiter &amp; Client Directory</span>
-                    </h3>
-                    <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                      Recruiters, founders, and hiring leads who checked in with a Recruiter Pass
-                    </p>
-                  </div>
-
-                  <div className="relative w-full sm:w-64">
+                  {loadingProjects && (
+                    <RefreshCw className="w-3.5 h-3.5 text-primary animate-spin" />
+                  )}
+                  <div className="relative">
+                    <SearchIcon className="w-3.5 h-3.5 absolute left-3 top-3 text-muted-foreground" />
                     <input
                       type="text"
-                      value={recruiterSearch}
-                      onChange={(e) => setRecruiterSearch(e.target.value)}
-                      placeholder="Search company or name..."
-                      className="w-full px-3 py-1.5 pl-8 rounded-xl bg-surface border border-input text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-border-accent"
+                      value={projectSearch}
+                      onChange={(e) => setProjectSearch(e.target.value)}
+                      placeholder="Filter projects..."
+                      className="pl-9 pr-3.5 py-1.5 rounded-xl bg-surface border border-border text-xs font-mono text-foreground focus:outline-none focus:border-primary"
                     />
-                    <SearchIcon className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2" />
                   </div>
-                </div>
 
-                {/* Table */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs font-mono">
-                    <thead>
-                      <tr className="border-b border-border text-muted-foreground">
-                        <th className="py-2.5 px-3">Recruiter / Client</th>
-                        <th className="py-2.5 px-3">Company / Org</th>
-                        <th className="py-2.5 px-3">Role / Title</th>
-                        <th className="py-2.5 px-3">Purpose</th>
-                        <th className="py-2.5 px-3 text-center">Visits</th>
-                        <th className="py-2.5 px-3 text-right">Last Visit</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {analyticsData?.recruiters && analyticsData.recruiters.length > 0 ? (
-                        analyticsData.recruiters
-                          .filter((r) => {
-                            if (!recruiterSearch.trim()) return true;
-                            const query = recruiterSearch.toLowerCase();
-                            return (
-                              r.name.toLowerCase().includes(query) ||
-                              r.company.toLowerCase().includes(query) ||
-                              r.email.toLowerCase().includes(query)
-                            );
-                          })
-                          .map((recruiter) => (
-                            <tr key={recruiter._id} className="hover:bg-surface/50 transition-colors">
-                              <td className="py-3 px-3">
-                                <div className="font-bold text-foreground">{recruiter.name}</div>
-                                <a
-                                  href={`mailto:${recruiter.email}`}
-                                  className="text-[11px] text-primary hover:underline"
-                                >
-                                  {recruiter.email}
-                                </a>
-                              </td>
-                              <td className="py-3 px-3">
-                                <span className="font-semibold text-foreground">
-                                  {recruiter.company || 'Independent'}
-                                </span>
-                              </td>
-                              <td className="py-3 px-3 text-muted-foreground">{recruiter.role}</td>
-                              <td className="py-3 px-3">
-                                <span
-                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                                    recruiter.purpose === 'hiring'
-                                      ? 'bg-primary/10 text-primary border border-primary/20'
-                                      : recruiter.purpose === 'freelance'
-                                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                      : 'bg-muted text-muted-foreground'
-                                  }`}
-                                >
-                                  {recruiter.purpose}
-                                </span>
-                              </td>
-                              <td className="py-3 px-3 text-center font-bold text-foreground">
-                                {recruiter.loginCount}
-                              </td>
-                              <td className="py-3 px-3 text-right text-muted-foreground text-[11px]">
-                                {new Date(recruiter.lastLoginAt).toLocaleDateString()}{' '}
-                                {new Date(recruiter.lastLoginAt).toLocaleTimeString([], {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
-                              </td>
-                            </tr>
-                          ))
-                      ) : (
-                        <tr>
-                          <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                            <div className="flex flex-col items-center gap-2">
-                              <Users className="w-6 h-6 text-muted-foreground opacity-40" />
-                              <p>No verified recruiters checked in yet.</p>
-                              <span className="text-[11px] text-muted-foreground/70">
-                                Visitors who click &ldquo;Recruiter Pass&rdquo; in your top navigation will automatically appear here.
-                              </span>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                  <button
+                    onClick={() => {
+                      setSelectedProjectForModal(null);
+                      setIsProjectModalOpen(true);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-primary hover:opacity-90 text-primary-foreground text-xs font-mono font-bold flex items-center gap-1.5 shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Add Project</span>
+                  </button>
                 </div>
               </div>
 
-              {/* Recent Visitors Telemetry Table */}
-              <div className="p-6 rounded-2xl bg-card border border-border shadow-sm space-y-4">
-                <div className="border-b border-border pb-3 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                      <Activity className="w-4 h-4 text-emerald-400" />
-                      <span>Recent Traffic Telemetry Log</span>
-                    </h3>
-                    <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                      Last 30 page visits across portfolio routes
-                    </p>
+              {/* Projects List with Reordering */}
+              <div className="space-y-3">
+                {filteredProjects.length === 0 ? (
+                  <div className="p-12 text-center bg-card border border-border rounded-2xl space-y-2 text-xs font-mono text-muted-foreground">
+                    <p>No projects match your current filter.</p>
+                    <button
+                      onClick={() => {
+                        setSelectedProjectForModal(null);
+                        setIsProjectModalOpen(true);
+                      }}
+                      className="text-primary hover:underline"
+                    >
+                      + Create a new project →
+                    </button>
                   </div>
-                  <span className="text-xs font-mono text-muted-foreground">
-                    {analyticsData?.recentVisitors.length || 0} recent sessions
-                  </span>
-                </div>
+                ) : (
+                  filteredProjects.map((p, idx) => (
+                    <div
+                      key={p.slug}
+                      className="p-4 sm:p-5 rounded-2xl bg-card border border-border hover:border-border-accent flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all shadow-sm"
+                    >
+                      {/* Left info */}
+                      <div className="flex items-start gap-4">
+                        {/* Up/Down order controls */}
+                        <div className="flex flex-col items-center gap-1 shrink-0 pt-0.5">
+                          <button
+                            onClick={() => handleMoveProject(idx, 'up')}
+                            disabled={idx === 0}
+                            className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-20"
+                            title="Move Up"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="text-[10px] font-mono text-muted-foreground font-bold">
+                            #{p.sortOrder ?? idx + 1}
+                          </span>
+                          <button
+                            onClick={() => handleMoveProject(idx, 'down')}
+                            disabled={idx === filteredProjects.length - 1}
+                            className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-20"
+                            title="Move Down"
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs font-mono">
-                    <thead>
-                      <tr className="border-b border-border text-muted-foreground">
-                        <th className="py-2 px-3">Visitor Type</th>
-                        <th className="py-2 px-3">Path Visited</th>
-                        <th className="py-2 px-3 text-center">Session Views</th>
-                        <th className="py-2 px-3">Device / Browser</th>
-                        <th className="py-2 px-3 text-right">Visited At</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {analyticsData?.recentVisitors && analyticsData.recentVisitors.length > 0 ? (
-                        analyticsData.recentVisitors.map((v) => (
-                          <tr key={v._id} className="hover:bg-surface/50 transition-colors">
-                            <td className="py-2.5 px-3">
-                              {v.type === 'user' && v.userId ? (
-                                <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold">
-                                  💼 {v.userId.name} ({v.userId.company})
+                        {/* Thumbnail or placeholder */}
+                        <div className="w-16 h-12 rounded-xl bg-surface border border-border overflow-hidden shrink-0 flex items-center justify-center">
+                          {p.image ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <FolderKanban className="w-5 h-5 text-muted-foreground/50" />
+                          )}
+                        </div>
+
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="text-base font-bold text-foreground truncate">{p.name}</h4>
+                            <span className="text-xs font-mono text-muted-foreground">/work/{p.slug}</span>
+
+                            <button
+                              onClick={() => handleToggleFeatured(p)}
+                              className={`p-1 rounded-md transition-colors ${
+                                p.featured ? 'text-amber-400' : 'text-muted-foreground/40 hover:text-muted-foreground'
+                              }`}
+                              title={p.featured ? 'Featured on homepage' : 'Mark as featured'}
+                            >
+                              <Star className={`w-3.5 h-3.5 ${p.featured ? 'fill-current' : ''}`} />
+                            </button>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-muted-foreground">
+                            <span>Tier {p.tier}</span>
+                            <span>•</span>
+                            <span>{p.category}</span>
+                            <span>•</span>
+                            <span>{p.year}</span>
+                            {p.technologies && p.technologies.length > 0 && (
+                              <>
+                                <span>•</span>
+                                <span className="text-foreground font-semibold truncate max-w-xs">
+                                  {p.technologies.slice(0, 4).join(', ')}
                                 </span>
-                              ) : (
-                                <span className="px-2 py-0.5 rounded-full bg-surface text-muted-foreground border border-border text-[10px]">
-                                  Guest ({v.visitorId.slice(0, 10)}...)
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-2.5 px-3 text-foreground font-semibold">
-                              {v.lastPath}
-                            </td>
-                            <td className="py-2.5 px-3 text-center font-bold text-primary">
-                              {v.viewsCount}
-                            </td>
-                            <td className="py-2.5 px-3 text-muted-foreground text-[11px] max-w-xs truncate">
-                              {v.userAgent ? v.userAgent.split(' ')[0] : 'Standard Client'}
-                            </td>
-                            <td className="py-2.5 px-3 text-right text-muted-foreground text-[11px]">
-                              {new Date(v.lastVisitedAt).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                second: '2-digit',
-                              })}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={5} className="py-6 text-center text-muted-foreground">
-                            No recent traffic recorded yet.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right actions */}
+                      <div className="flex flex-wrap items-center gap-2 shrink-0 justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-border">
+                        {/* Status selector */}
+                        <select
+                          value={p.status || 'published'}
+                          onChange={(e) =>
+                            handleToggleProjectStatus(p, e.target.value as 'published' | 'draft' | 'archived')
+                          }
+                          className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold uppercase border ${
+                            p.status === 'published'
+                              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                              : p.status === 'draft'
+                              ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                              : 'bg-muted border-border text-muted-foreground'
+                          }`}
+                        >
+                          <option value="published">Published</option>
+                          <option value="draft">Draft</option>
+                          <option value="archived">Archived</option>
+                        </select>
+
+                        <a
+                          href={`/work/${p.slug}?preview=true`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-2.5 py-1.5 rounded-lg bg-surface hover:bg-muted border border-border text-xs font-mono text-muted-foreground hover:text-foreground flex items-center gap-1"
+                          title="Preview case study"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-primary" />
+                          <span className="hidden sm:inline">Preview</span>
+                        </a>
+
+                        <button
+                          onClick={() => {
+                            setSelectedProjectForModal(p);
+                            setIsProjectModalOpen(true);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/30 text-xs font-mono text-primary font-bold flex items-center gap-1"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>Edit</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteProject(p)}
+                          className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
+                          title="Delete Project"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
 
           {/* ====================================================
-              TAB 2: PROFILE & BIO
+              TAB: REUSABLE SKILLS CATALOG
               ==================================================== */}
-          {activeTab === 'profile' && (
-            <div className="p-6 rounded-2xl bg-card border border-border shadow-sm space-y-6 animate-in fade-in duration-200">
-              <div className="flex items-center justify-between border-b border-border pb-4">
-                <div>
-                  <h2 className="text-lg font-bold text-foreground">Personal Profile & Bio</h2>
-                  <p className="text-xs text-muted-foreground font-mono">
-                    Update your display name, engineering title, bio, and social credentials.
-                  </p>
-                </div>
-                <button
-                  onClick={() => saveSection('personalInfo', personalInfo)}
-                  className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-1.5 hover:opacity-90"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Save Profile</span>
-                </button>
+          {activeTab === 'skills' && (
+            <SkillsView skills={skills} onRefresh={fetchAllAdminData} />
+          )}
+
+          {/* ====================================================
+              TAB: LIVE VISITORS (REALTIME PRESENCE)
+              ==================================================== */}
+          {activeTab === 'live' && <LiveVisitorsView />}
+
+          {/* ====================================================
+              TAB: ANALYTICS & CHARTS
+              ==================================================== */}
+          {activeTab === 'analytics' && <AnalyticsDashboard />}
+
+          {/* ====================================================
+              TAB: SETTINGS (PERSONAL INFO)
+              ==================================================== */}
+          {activeTab === 'settings' && (
+            <div className="p-6 rounded-3xl bg-card border border-border space-y-6 shadow-sm animate-in fade-in duration-150">
+              <div>
+                <h3 className="text-base font-bold font-mono text-foreground flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-primary" />
+                  <span>Portfolio Global Settings &amp; Personal Info</span>
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Customize the headline, bio, availability status, resume file URL, and social links.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
@@ -1352,47 +1257,57 @@ export default function AdminPage() {
                     type="text"
                     value={personalInfo.name}
                     onChange={(e) => setPersonalInfo({ ...personalInfo, name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground focus:outline-none focus:border-border-accent"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:border-primary"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-muted-foreground">Engineering Role / Title</label>
+                  <label className="text-muted-foreground">Role Title</label>
                   <input
                     type="text"
                     value={personalInfo.role}
                     onChange={(e) => setPersonalInfo({ ...personalInfo, role: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground focus:outline-none focus:border-border-accent"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:border-primary"
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-muted-foreground">Tagline</label>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-muted-foreground">Hero Tagline</label>
                   <input
                     type="text"
                     value={personalInfo.tagline}
                     onChange={(e) => setPersonalInfo({ ...personalInfo, tagline: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground focus:outline-none focus:border-border-accent"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-muted-foreground">Bio / Narrative</label>
+                  <textarea
+                    rows={3}
+                    value={personalInfo.bio}
+                    onChange={(e) => setPersonalInfo({ ...personalInfo, bio: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground text-sm leading-relaxed focus:outline-none focus:border-primary"
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-muted-foreground">Contact Email</label>
                   <input
-                    type="email"
+                    type="text"
                     value={personalInfo.email}
                     onChange={(e) => setPersonalInfo({ ...personalInfo, email: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground focus:outline-none focus:border-border-accent"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:border-primary"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-muted-foreground">GitHub Profile URL</label>
+                  <label className="text-muted-foreground">GitHub URL</label>
                   <input
-                    type="url"
+                    type="text"
                     value={personalInfo.github}
                     onChange={(e) => setPersonalInfo({ ...personalInfo, github: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground focus:outline-none focus:border-border-accent"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:border-primary"
                   />
                 </div>
 
@@ -1402,411 +1317,77 @@ export default function AdminPage() {
                     type="text"
                     value={personalInfo.location}
                     onChange={(e) => setPersonalInfo({ ...personalInfo, location: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground focus:outline-none focus:border-border-accent"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:border-primary"
                   />
                 </div>
-              </div>
 
-              <div className="space-y-1.5 text-xs font-mono">
-                <label className="text-muted-foreground">Engineering Bio</label>
-                <textarea
-                  rows={4}
-                  value={personalInfo.bio}
-                  onChange={(e) => setPersonalInfo({ ...personalInfo, bio: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground focus:outline-none focus:border-border-accent font-sans text-sm"
-                  placeholder="Describe your engineering philosophy, specializations, and focus..."
-                />
-              </div>
-
-              <div className="flex items-center gap-3 pt-2">
-                <input
-                  type="checkbox"
-                  id="availableCheckbox"
-                  checked={personalInfo.available}
-                  onChange={(e) => setPersonalInfo({ ...personalInfo, available: e.target.checked })}
-                  className="w-4 h-4 rounded text-primary focus:ring-ring"
-                />
-                <label htmlFor="availableCheckbox" className="text-xs font-mono text-foreground cursor-pointer">
-                  Show &quot;Available for Opportunities&quot; status badge on website
-                </label>
-              </div>
-            </div>
-          )}
-
-          {/* ====================================================
-              TAB 3: CV & RESUME
-              ==================================================== */}
-          {activeTab === 'cv' && (
-            <div className="p-6 rounded-2xl bg-card border border-border shadow-sm space-y-6 animate-in fade-in duration-200">
-              <div className="flex items-center justify-between border-b border-border pb-4">
-                <div>
-                  <h2 className="text-lg font-bold text-foreground">CV &amp; Resume Configuration</h2>
-                  <p className="text-xs text-muted-foreground font-mono">
-                    Configure your direct PDF download link and preview the live digital resume page.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Link
-                    href="/resume"
-                    target="_blank"
-                    className="px-3 py-2 rounded-xl bg-surface hover:bg-surface-elevated border border-border text-xs font-mono text-foreground flex items-center gap-1.5"
-                  >
-                    <span>View Digital Resume</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </Link>
-                  <button
-                    onClick={() => saveSection('personalInfo', personalInfo)}
-                    className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-1.5 hover:opacity-90"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    <span>Save Resume Settings</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-4 font-mono text-xs">
                 <div className="space-y-1.5">
-                  <label className="text-muted-foreground">Resume PDF Download Link (Direct URL or Google Drive / Cloudinary)</label>
+                  <label className="text-muted-foreground">Resume PDF URL (Optional override)</label>
                   <input
-                    type="url"
+                    type="text"
                     value={personalInfo.resumeUrl || ''}
                     onChange={(e) => setPersonalInfo({ ...personalInfo, resumeUrl: e.target.value })}
-                    placeholder="https://example.com/rahul-raj-resume.pdf"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground focus:outline-none focus:border-border-accent"
+                    placeholder="https://..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:border-primary"
                   />
-                  <p className="text-[11px] text-muted-foreground/80">
-                    When visitors click &quot;Download PDF&quot; on your portfolio, this URL will be downloaded.
-                  </p>
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* ====================================================
-              TAB 4: EDUCATION & DEGREES
-              ==================================================== */}
-          {activeTab === 'education' && (
-            <div className="space-y-6 animate-in fade-in duration-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-foreground">Academic Education</h2>
-                  <p className="text-xs text-muted-foreground font-mono">
-                    Manage college degrees, engineering institutions, GPA, and coursework.
-                  </p>
-                </div>
+              <div className="flex items-center justify-between pt-4 border-t border-border">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-mono">
+                  <input
+                    type="checkbox"
+                    checked={personalInfo.available}
+                    onChange={(e) => setPersonalInfo({ ...personalInfo, available: e.target.checked })}
+                    className="rounded border-border text-primary focus:ring-primary"
+                  />
+                  <span>Available for Engineering Roles / Select Contracts</span>
+                </label>
+
                 <button
-                  onClick={() => {
-                    setEditingEdu({
-                      institution: '',
-                      degree: '',
-                      field: 'Computer Science & Engineering',
-                      duration: '2021 — 2025',
-                      score: '',
-                      location: 'India',
-                      achievements: [],
-                    });
-                    setIsEduModalOpen(true);
-                  }}
-                  className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-1.5 hover:opacity-90"
+                  onClick={handleSaveSettings}
+                  disabled={loading}
+                  className="px-5 py-2.5 rounded-xl bg-primary hover:opacity-90 text-primary-foreground text-xs font-mono font-bold flex items-center gap-2 shadow-md shadow-primary/20 disabled:opacity-50"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Education</span>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{loading ? 'Saving...' : 'Save Settings'}</span>
                 </button>
               </div>
-
-              <div className="space-y-4">
-                {educations.map((edu, idx) => (
-                  <div
-                    key={idx}
-                    className="p-5 rounded-2xl bg-card border border-border flex items-start justify-between gap-4 card-beam"
-                  >
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <GraduationCap className="w-4 h-4 text-primary" />
-                        <h3 className="text-base font-bold text-foreground">{edu.degree}</h3>
-                        {edu.field && (
-                          <span className="text-xs font-mono text-muted-foreground">in {edu.field}</span>
-                        )}
-                      </div>
-                      <p className="text-sm text-primary font-mono">{edu.institution}</p>
-                      <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground">
-                        <span>{edu.duration}</span>
-                        {edu.score && <span>• {edu.score}</span>}
-                        {edu.location && <span>• {edu.location}</span>}
-                      </div>
-                      {edu.achievements && edu.achievements.length > 0 && (
-                        <ul className="list-disc pl-5 text-xs text-muted-foreground pt-2 space-y-1">
-                          {edu.achievements.map((item, i) => (
-                            <li key={i}>{item}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          setEditingEdu(edu);
-                          setIsEduModalOpen(true);
-                        }}
-                        className="p-2 rounded-lg bg-surface hover:bg-surface-elevated border border-border text-muted-foreground hover:text-foreground"
-                        title="Edit"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Delete ${edu.degree}?`)) {
-                            const updated = educations.filter((_, i) => i !== idx);
-                            setEducations(updated);
-                            saveSection('educations', updated);
-                          }
-                        }}
-                        className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 border border-destructive/20 text-destructive"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
 
           {/* ====================================================
-              TAB 5: EXPERIENCE & CAREER
+              TAB: EXPERIENCE HISTORY
               ==================================================== */}
           {activeTab === 'experience' && (
-            <div className="space-y-6 animate-in fade-in duration-200">
+            <div className="p-6 rounded-3xl bg-card border border-border space-y-6 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-bold text-foreground">Work Experience &amp; Positions</h2>
-                  <p className="text-xs text-muted-foreground font-mono">
-                    Manage companies, engineering roles, durations, and key technical accomplishments.
-                  </p>
+                  <h3 className="text-base font-bold font-mono text-foreground flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-primary" />
+                    <span>Work Experience ({experiences.length})</span>
+                  </h3>
+                  <p className="text-xs text-muted-foreground">Engineering roles, companies, and achievements.</p>
                 </div>
-                <button
-                  onClick={() => {
-                    setEditingExp({
-                      company: '',
-                      role: '',
-                      duration: '2024 — Present',
-                      description: '',
-                      technologies: [],
-                      achievements: [],
-                      current: true,
-                    });
-                    setIsExpModalOpen(true);
-                  }}
-                  className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-1.5 hover:opacity-90"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Experience</span>
-                </button>
               </div>
 
               <div className="space-y-4">
                 {experiences.map((exp, idx) => (
-                  <div
-                    key={idx}
-                    className="p-5 rounded-2xl bg-card border border-border flex items-start justify-between gap-4 card-beam"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Briefcase className="w-4 h-4 text-primary" />
-                        <h3 className="text-base font-bold text-foreground">{exp.role}</h3>
-                        <span className="text-sm font-mono text-primary font-semibold">@ {exp.company}</span>
-                        {exp.current && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-mono">
-                            Current
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs font-mono text-muted-foreground">{exp.duration}</p>
-                      {exp.description && (
-                        <p className="text-xs text-muted-foreground leading-relaxed">{exp.description}</p>
-                      )}
-                      {exp.achievements && exp.achievements.length > 0 && (
-                        <ul className="list-disc pl-5 text-xs text-muted-foreground space-y-1 pt-1">
-                          {exp.achievements.map((ach, i) => (
-                            <li key={i}>{ach}</li>
-                          ))}
-                        </ul>
-                      )}
-                      {exp.technologies && (
-                        <div className="flex flex-wrap gap-1.5 pt-2">
-                          {exp.technologies.map((t) => (
-                            <span
-                              key={t}
-                              className="px-2 py-0.5 rounded bg-surface border border-border text-[10px] font-mono text-foreground"
-                            >
-                              {t}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                  <div key={idx} className="p-4 rounded-2xl bg-surface border border-border space-y-2 text-xs font-mono">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-foreground text-sm">{exp.role} @ {exp.company}</span>
+                      <span className="text-muted-foreground">{exp.duration}</span>
                     </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => {
-                          setEditingExp(exp);
-                          setIsExpModalOpen(true);
-                        }}
-                        className="p-2 rounded-lg bg-surface hover:bg-surface-elevated border border-border text-muted-foreground hover:text-foreground"
-                        title="Edit"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Delete ${exp.role} at ${exp.company}?`)) {
-                            const updated = experiences.filter((_, i) => i !== idx);
-                            setExperiences(updated);
-                            saveSection('experiences', updated);
-                          }
-                        }}
-                        className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 border border-destructive/20 text-destructive"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ====================================================
-              TAB 6: PROJECTS & WORKS
-              ==================================================== */}
-          {activeTab === 'projects' && (
-            <div className="space-y-6 animate-in fade-in duration-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-foreground">Projects &amp; Flagship Works</h2>
-                  <p className="text-xs text-muted-foreground font-mono">
-                    Add new engineering case studies, update tags, links, and tiers (Tier S Flagships / Tier A).
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    setEditingProject({
-                      slug: '',
-                      name: '',
-                      tagline: '',
-                      description: '',
-                      category: 'Full Stack',
-                      tier: 'A',
-                      type: 'Web Application',
-                      technologies: [],
-                      features: [],
-                      links: { live: '', github: '' },
-                      color: '#00f0ff',
-                      year: '2025',
-                      role: 'Lead Full-Stack Architect',
-                    });
-                    setIsProjectModalOpen(true);
-                  }}
-                  className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-1.5 hover:opacity-90"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Project</span>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {projects.map((proj, idx) => (
-                  <div
-                    key={proj.slug || idx}
-                    className="p-5 rounded-2xl bg-card border border-border flex flex-col justify-between space-y-4 card-beam"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span
-                          className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
-                            proj.tier === 'S'
-                              ? 'bg-primary/20 text-primary border border-border-accent'
-                              : 'bg-surface text-muted-foreground border border-border'
-                          }`}
-                        >
-                          Tier {proj.tier} • {proj.category}
-                        </span>
-                        <span className="text-xs font-mono text-muted-foreground">{proj.year}</span>
-                      </div>
-
-                      <h3 className="text-lg font-bold text-foreground">{proj.name}</h3>
-                      <p className="text-xs font-mono text-primary">{proj.tagline}</p>
-                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                        {proj.description}
-                      </p>
-
+                    <p className="text-muted-foreground">{exp.description}</p>
+                    {exp.technologies && (
                       <div className="flex flex-wrap gap-1 pt-1">
-                        {proj.technologies.slice(0, 5).map((t) => (
-                          <span
-                            key={t}
-                            className="px-2 py-0.5 rounded bg-surface border border-border text-[10px] font-mono text-muted-foreground"
-                          >
+                        {exp.technologies.map((t) => (
+                          <span key={t} className="px-2 py-0.5 rounded bg-surface-elevated text-[10px] text-primary">
                             {t}
                           </span>
                         ))}
                       </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-3 border-t border-border">
-                      <div className="flex items-center gap-2">
-                        {proj.links.live && (
-                          <a
-                            href={proj.links.live}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-xs text-primary hover:underline flex items-center gap-1"
-                          >
-                            <span>Live</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
-                        {proj.links.github && (
-                          <a
-                            href={proj.links.github}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-                          >
-                            <span>GitHub</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            setEditingProject(proj);
-                            setIsProjectModalOpen(true);
-                          }}
-                          className="p-1.5 rounded-lg bg-surface hover:bg-surface-elevated border border-border text-muted-foreground hover:text-foreground"
-                          title="Edit Project"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Delete project "${proj.name}"?`)) {
-                              const updated = projects.filter((_, i) => i !== idx);
-                              setProjects(updated);
-                              saveSection('projects', updated);
-                            }
-                          }}
-                          className="p-1.5 rounded-lg bg-destructive/10 hover:bg-destructive/20 border border-destructive/20 text-destructive"
-                          title="Delete Project"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1814,486 +1395,208 @@ export default function AdminPage() {
           )}
 
           {/* ====================================================
-              TAB 7: SECURITY & PASSKEY MANAGEMENT
+              TAB: EDUCATION
+              ==================================================== */}
+          {activeTab === 'education' && (
+            <div className="p-6 rounded-3xl bg-card border border-border space-y-6 shadow-sm">
+              <div>
+                <h3 className="text-base font-bold font-mono text-foreground flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-primary" />
+                  <span>Education &amp; Credentials ({educations.length})</span>
+                </h3>
+                <p className="text-xs text-muted-foreground">Degrees, university details, and distinction scores.</p>
+              </div>
+
+              <div className="space-y-4">
+                {educations.map((edu, idx) => (
+                  <div key={idx} className="p-4 rounded-2xl bg-surface border border-border space-y-2 text-xs font-mono">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-foreground text-sm">{edu.degree}</span>
+                      <span className="text-muted-foreground">{edu.duration}</span>
+                    </div>
+                    <div className="text-primary">{edu.institution} • {edu.score}</div>
+                    {edu.achievements && (
+                      <ul className="list-disc list-inside space-y-1 text-muted-foreground pt-1">
+                        {edu.achievements.map((ach, aIdx) => (
+                          <li key={aIdx}>{ach}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ====================================================
+              TAB: SECURITY & PASSKEY
               ==================================================== */}
           {activeTab === 'security' && (
-            <div className="space-y-6 animate-in fade-in duration-200">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column: Change Passkey Form (2 cols) */}
-                <div className="lg:col-span-2 p-6 rounded-2xl bg-card border border-border shadow-sm space-y-6 card-beam">
-                  <div className="flex items-center gap-3 border-b border-border pb-4">
-                    <div className="p-2.5 rounded-xl bg-primary/10 text-primary border border-border-accent">
-                      <KeyRound className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-bold text-foreground">Change Admin Passkey</h2>
-                      <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                        Update the security passcode required to access your secret Studio Dashboard
-                      </p>
-                    </div>
-                  </div>
+            <div className="p-6 rounded-3xl bg-card border border-border space-y-6 shadow-sm">
+              <div>
+                <h3 className="text-base font-bold font-mono text-foreground flex items-center gap-2">
+                  <KeyRound className="w-4 h-4 text-primary" />
+                  <span>Security, Passkey &amp; Access Control</span>
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Update your active admin passkey or configure email OTP recovery.
+                </p>
+              </div>
 
-                  <form onSubmit={handleChangePasscode} className="space-y-4 max-w-lg">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-mono text-muted-foreground block">
-                        Current Passcode
-                      </label>
-                      <input
-                        type="password"
-                        value={currentPasscode}
-                        onChange={(e) => setCurrentPasscode(e.target.value)}
-                        placeholder="Enter current passcode"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
-                      />
-                    </div>
+              {securityMsg && (
+                <div
+                  className={`p-3 rounded-xl text-xs font-mono ${
+                    securityMsg.type === 'success'
+                      ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400'
+                      : 'bg-destructive/15 border border-destructive/30 text-destructive'
+                  }`}
+                >
+                  {securityMsg.text}
+                </div>
+              )}
 
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-mono text-muted-foreground block">
-                        New Passcode (min 4 characters)
-                      </label>
-                      <input
-                        type="password"
-                        value={newPasscode}
-                        onChange={(e) => setNewPasscode(e.target.value)}
-                        placeholder="Enter new passkey"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
-                      />
-                    </div>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (newPasscode !== confirmPasscode) {
+                    setSecurityMsg({ type: 'error', text: 'New passcodes do not match.' });
+                    return;
+                  }
+                  setIsUpdatingPasscode(true);
+                  try {
+                    const res = await fetch('/api/admin/auth', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        action: 'change_passcode',
+                        currentPasscode,
+                        newPasscode,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (res.ok && data.success) {
+                      setSecurityMsg({ type: 'success', text: data.message });
+                      setCurrentPasscode('');
+                      setNewPasscode('');
+                      setConfirmPasscode('');
+                    } else {
+                      setSecurityMsg({ type: 'error', text: data.error || 'Failed to update passcode.' });
+                    }
+                  } catch {
+                    setSecurityMsg({ type: 'error', text: 'Request failed.' });
+                  } finally {
+                    setIsUpdatingPasscode(false);
+                  }
+                }}
+                className="max-w-md space-y-4 text-xs font-mono"
+              >
+                <div className="space-y-1">
+                  <label className="text-muted-foreground">Current Passcode</label>
+                  <input
+                    type="password"
+                    value={currentPasscode}
+                    onChange={(e) => setCurrentPasscode(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-mono text-muted-foreground block">
-                        Confirm New Passcode
-                      </label>
-                      <input
-                        type="password"
-                        value={confirmPasscode}
-                        onChange={(e) => setConfirmPasscode(e.target.value)}
-                        placeholder="Re-enter new passkey"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-input text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-border-accent focus:ring-1 focus:ring-ring transition-all"
-                      />
-                    </div>
+                <div className="space-y-1">
+                  <label className="text-muted-foreground">New Passcode</label>
+                  <input
+                    type="password"
+                    value={newPasscode}
+                    onChange={(e) => setNewPasscode(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
 
-                    {securityMsg && (
-                      <div
-                        className={`p-3 rounded-xl border text-xs font-mono flex items-center gap-2 ${
-                          securityMsg.type === 'success'
-                            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                            : 'bg-destructive/10 text-destructive border-destructive/20'
-                        }`}
-                      >
-                        {securityMsg.type === 'success' ? (
-                          <CheckCircle2 className="w-4 h-4 shrink-0" />
-                        ) : (
-                          <AlertTriangle className="w-4 h-4 shrink-0" />
-                        )}
-                        <span>{securityMsg.text}</span>
-                      </div>
+                <div className="space-y-1">
+                  <label className="text-muted-foreground">Confirm New Passcode</label>
+                  <input
+                    type="password"
+                    value={confirmPasscode}
+                    onChange={(e) => setConfirmPasscode(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isUpdatingPasscode}
+                  className="px-5 py-2.5 rounded-xl bg-primary hover:opacity-90 text-primary-foreground font-bold disabled:opacity-50"
+                >
+                  {isUpdatingPasscode ? 'Updating...' : 'Update Passcode'}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* ====================================================
+              TAB: AUDIT LOG
+              ==================================================== */}
+          {activeTab === 'audit' && (
+            <div className="p-6 rounded-3xl bg-card border border-border space-y-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold font-mono text-foreground flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-primary" />
+                    <span>Administrative Audit Trail ({auditLogs.length})</span>
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Historical record of project additions, edits, deletions, and settings mutations.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-surface border border-border rounded-2xl overflow-hidden">
+                <table className="w-full text-left text-xs font-mono">
+                  <thead className="bg-surface-elevated border-b border-border text-muted-foreground uppercase text-[10px]">
+                    <tr>
+                      <th className="py-3 px-4">Action</th>
+                      <th className="py-3 px-4">Resource</th>
+                      <th className="py-3 px-4">Details</th>
+                      <th className="py-3 px-4 text-right">Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {auditLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="py-8 text-center text-muted-foreground">
+                          No audit logs recorded yet. Mutations will be logged here.
+                        </td>
+                      </tr>
+                    ) : (
+                      auditLogs.map((log, idx) => (
+                        <tr key={idx} className="hover:bg-card/50 transition-colors">
+                          <td className="py-3 px-4 font-bold text-foreground capitalize">
+                            {log.action.replace('_', ' ')}
+                          </td>
+                          <td className="py-3 px-4 text-primary">{log.resource}</td>
+                          <td className="py-3 px-4 text-muted-foreground truncate max-w-xs">
+                            {JSON.stringify(log.details || {})}
+                          </td>
+                          <td className="py-3 px-4 text-right text-muted-foreground">
+                            {new Date(log.timestamp).toLocaleString()}
+                          </td>
+                        </tr>
+                      ))
                     )}
-
-                    <div className="pt-2">
-                      <button
-                        type="submit"
-                        disabled={isUpdatingPasscode}
-                        className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
-                      >
-                        <Save className="w-4 h-4" />
-                        <span>{isUpdatingPasscode ? 'Updating Cloud Passcode...' : 'Save New Passcode'}</span>
-                      </button>
-                    </div>
-                  </form>
-                </div>
-
-                {/* Right Column: Emergency Recovery & Safety Nets (1 col) */}
-                <div className="space-y-6">
-                  {/* Emergency Recovery Card */}
-                  <div className="p-6 rounded-2xl bg-card border border-border shadow-sm space-y-4">
-                    <div className="flex items-center gap-2.5 text-primary">
-                      <ShieldCheck className="w-5 h-5" />
-                      <h3 className="text-sm font-bold text-foreground">Passcode Recovery Setup</h3>
-                    </div>
-
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      If you ever forget your passkey, you have <strong className="text-foreground">two fail-safe methods</strong> to regain access instantly:
-                    </p>
-
-                    <div className="space-y-3 font-mono text-[11px]">
-                      <div className="p-3 rounded-xl bg-surface border border-border space-y-1">
-                        <span className="text-primary font-bold block">1. Self-Service Master Key Reset</span>
-                        <p className="text-muted-foreground">
-                          On the login gate (<code className="text-foreground">/admin</code>), click <strong className="text-foreground">&ldquo;Forgot Passcode?&rdquo;</strong> and enter your <code className="text-primary">ADMIN_RECOVERY_KEY</code> from <code className="text-foreground">.env.local</code>.
-                        </p>
-                      </div>
-
-                      <div className="p-3 rounded-xl bg-surface border border-border space-y-1">
-                        <span className="text-primary font-bold block">2. Local .env.local Override</span>
-                        <p className="text-muted-foreground">
-                          Open <code className="text-foreground">.env.local</code> in VSCode / Antigravity and change <code className="text-primary">ADMIN_PASSCODE=...</code> directly.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Cloud Persistence Badge Card */}
-                  <div className="p-6 rounded-2xl bg-card border border-border shadow-sm space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-foreground font-bold text-xs font-mono">
-                        <Database className="w-4 h-4 text-primary" />
-                        <span>Storage Persistence</span>
-                      </div>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                        Atlas Sync
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Passcode changes are persisted to your MongoDB Atlas cluster so your custom credentials stay active across server restarts and production deployments.
-                    </p>
-                    <div className="pt-2">
-                      <button
-                        onClick={handleLogout}
-                        className="w-full py-2 rounded-xl bg-surface hover:bg-surface-elevated border border-border text-xs font-mono text-destructive flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                      >
-                        <LogOut className="w-3.5 h-3.5" />
-                        <span>Log Out & Lock Studio</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
         </main>
       </div>
 
-      {/* ====================================================
-          MODAL: PROJECT ADD / EDIT
-          ==================================================== */}
-      {isProjectModalOpen && editingProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card border border-border rounded-2xl p-6 space-y-5 shadow-2xl text-foreground card-beam">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <h3 className="text-base font-bold text-foreground">
-                {editingProject.name ? `Edit: ${editingProject.name}` : 'Add New Project'}
-              </h3>
-              <button
-                onClick={() => setIsProjectModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground text-sm font-mono"
-              >
-                ✕ Close
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
-              <div className="space-y-1.5">
-                <label className="text-muted-foreground">Project Name</label>
-                <input
-                  type="text"
-                  value={editingProject.name}
-                  onChange={(e) => {
-                    const name = e.target.value;
-                    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                    setEditingProject({ ...editingProject, name, slug: editingProject.slug || slug });
-                  }}
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground"
-                  placeholder="e.g. Nexus AI"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-muted-foreground">URL Slug</label>
-                <input
-                  type="text"
-                  value={editingProject.slug}
-                  onChange={(e) => setEditingProject({ ...editingProject, slug: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground"
-                  placeholder="nexus-ai"
-                />
-              </div>
-
-              <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-muted-foreground">Tagline</label>
-                <input
-                  type="text"
-                  value={editingProject.tagline}
-                  onChange={(e) => setEditingProject({ ...editingProject, tagline: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground"
-                  placeholder="Real-Time Autonomous Agent Platform"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-muted-foreground">Tier</label>
-                <select
-                  value={editingProject.tier}
-                  onChange={(e) => setEditingProject({ ...editingProject, tier: e.target.value as 'S' | 'A' | 'B' })}
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground"
-                >
-                  <option value="S">Tier S (Flagship Featured)</option>
-                  <option value="A">Tier A (Core Production)</option>
-                  <option value="B">Tier B (Supporting System)</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-muted-foreground">Category</label>
-                <input
-                  type="text"
-                  value={editingProject.category}
-                  onChange={(e) => setEditingProject({ ...editingProject, category: e.target.value as any })}
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground"
-                  placeholder="Full Stack / Realtime / AI"
-                />
-              </div>
-
-              <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-muted-foreground">Description</label>
-                <textarea
-                  rows={3}
-                  value={editingProject.description}
-                  onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground font-sans text-xs"
-                />
-              </div>
-
-              <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-muted-foreground">Technologies (comma-separated)</label>
-                <input
-                  type="text"
-                  value={editingProject.technologies.join(', ')}
-                  onChange={(e) =>
-                    setEditingProject({
-                      ...editingProject,
-                      technologies: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
-                    })
-                  }
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground"
-                  placeholder="React 19, Next.js, Node.js, Socket.IO"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-muted-foreground">Live URL</label>
-                <input
-                  type="url"
-                  value={editingProject.links.live || ''}
-                  onChange={(e) =>
-                    setEditingProject({
-                      ...editingProject,
-                      links: { ...editingProject.links, live: e.target.value },
-                    })
-                  }
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-muted-foreground">GitHub URL</label>
-                <input
-                  type="url"
-                  value={editingProject.links.github || ''}
-                  onChange={(e) =>
-                    setEditingProject({
-                      ...editingProject,
-                      links: { ...editingProject.links, github: e.target.value },
-                    })
-                  }
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-              <button
-                onClick={() => setIsProjectModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-surface border border-border text-xs font-mono text-muted-foreground"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  const existingIndex = projects.findIndex((p) => p.slug === editingProject.slug);
-                  let updated: Project[];
-                  if (existingIndex >= 0) {
-                    updated = [...projects];
-                    updated[existingIndex] = editingProject;
-                  } else {
-                    updated = [editingProject, ...projects];
-                  }
-                  setProjects(updated);
-                  saveSection('projects', updated);
-                  setIsProjectModalOpen(false);
-                }}
-                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold"
-              >
-                Save Project
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ====================================================
-          MODAL: EDUCATION ADD / EDIT
-          ==================================================== */}
-      {isEduModalOpen && editingEdu && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
-          <div className="w-full max-w-lg bg-card border border-border rounded-2xl p-6 space-y-4 shadow-2xl text-foreground card-beam">
-            <h3 className="text-base font-bold text-foreground">
-              {editingEdu.degree ? 'Edit Education' : 'Add Academic Qualification'}
-            </h3>
-
-            <div className="space-y-3 text-xs font-mono">
-              <div className="space-y-1">
-                <label className="text-muted-foreground">Degree / Certificate</label>
-                <input
-                  type="text"
-                  value={editingEdu.degree}
-                  onChange={(e) => setEditingEdu({ ...editingEdu, degree: e.target.value })}
-                  placeholder="Bachelor of Technology (B.Tech)"
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-muted-foreground">Institution / University</label>
-                <input
-                  type="text"
-                  value={editingEdu.institution}
-                  onChange={(e) => setEditingEdu({ ...editingEdu, institution: e.target.value })}
-                  placeholder="APJ Abdul Kalam Technological University"
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-muted-foreground">Duration</label>
-                  <input
-                    type="text"
-                    value={editingEdu.duration}
-                    onChange={(e) => setEditingEdu({ ...editingEdu, duration: e.target.value })}
-                    placeholder="2021 — 2025"
-                    className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-muted-foreground">Score / GPA</label>
-                  <input
-                    type="text"
-                    value={editingEdu.score || ''}
-                    onChange={(e) => setEditingEdu({ ...editingEdu, score: e.target.value })}
-                    placeholder="First Class with Distinction"
-                    className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
-              <button
-                onClick={() => setIsEduModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-surface border border-border text-xs font-mono text-muted-foreground"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  const updated = [...educations, editingEdu];
-                  setEducations(updated);
-                  saveSection('educations', updated);
-                  setIsEduModalOpen(false);
-                }}
-                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold"
-              >
-                Save Qualification
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ====================================================
-          MODAL: EXPERIENCE ADD / EDIT
-          ==================================================== */}
-      {isExpModalOpen && editingExp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
-          <div className="w-full max-w-lg bg-card border border-border rounded-2xl p-6 space-y-4 shadow-2xl text-foreground card-beam">
-            <h3 className="text-base font-bold text-foreground">
-              {editingExp.company ? `Edit Role at ${editingExp.company}` : 'Add Work Experience'}
-            </h3>
-
-            <div className="space-y-3 text-xs font-mono">
-              <div className="space-y-1">
-                <label className="text-muted-foreground">Job Role</label>
-                <input
-                  type="text"
-                  value={editingExp.role}
-                  onChange={(e) => setEditingExp({ ...editingExp, role: e.target.value })}
-                  placeholder="Full-Stack Engineer"
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-muted-foreground">Company Name</label>
-                <input
-                  type="text"
-                  value={editingExp.company}
-                  onChange={(e) => setEditingExp({ ...editingExp, company: e.target.value })}
-                  placeholder="Acme Corp"
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-muted-foreground">Duration</label>
-                <input
-                  type="text"
-                  value={editingExp.duration}
-                  onChange={(e) => setEditingExp({ ...editingExp, duration: e.target.value })}
-                  placeholder="2024 — Present"
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-muted-foreground">Technologies Used (comma-separated)</label>
-                <input
-                  type="text"
-                  value={editingExp.technologies.join(', ')}
-                  onChange={(e) =>
-                    setEditingExp({
-                      ...editingExp,
-                      technologies: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
-                    })
-                  }
-                  placeholder="Node.js, Next.js, Redis, MongoDB"
-                  className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
-              <button
-                onClick={() => setIsExpModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-surface border border-border text-xs font-mono text-muted-foreground"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  const updated = [...experiences, editingExp];
-                  setExperiences(updated);
-                  saveSection('experiences', updated);
-                  setIsExpModalOpen(false);
-                }}
-                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold"
-              >
-                Save Role
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Project Studio Modal */}
+      <ProjectModal
+        isOpen={isProjectModalOpen}
+        project={selectedProjectForModal}
+        skillsList={skills}
+        onClose={() => setIsProjectModalOpen(false)}
+        onSave={handleSaveProjectFromModal}
+      />
     </div>
   );
 }

@@ -4,9 +4,11 @@ import React from 'react';
 import { Printer, Mail, Sparkles } from 'lucide-react';
 import { GithubIcon } from '@/components/ui/Icons';
 import { personalInfo, projects, experience } from '@/lib/data/portfolio';
+import { trackEvent } from '@/lib/analytics/tracker';
 
 export default function ResumePage() {
   const handlePrint = () => {
+    trackEvent('resume_download', { metadata: { source: 'resume_page_print' } });
     window.print();
   };
 

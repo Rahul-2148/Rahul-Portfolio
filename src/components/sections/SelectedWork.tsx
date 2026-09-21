@@ -1,27 +1,49 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ExternalLink, ArrowUpRight, Sparkles } from 'lucide-react';
 import { GithubIcon } from '@/components/ui/Icons';
-import { projects } from '@/lib/data/portfolio';
+import { projects as defaultProjects } from '@/lib/data/portfolio';
 import { SpotlightCard } from '@/components/ui/SpotlightCard';
+import { Project } from '@/types';
+import { trackEvent } from '@/lib/analytics/tracker';
 
 export function SelectedWork() {
+  const [projectList, setProjectList] = useState<Project[]>(defaultProjects);
   const [filter, setFilter] = useState<string>('all');
+
+  useEffect(() => {
+    fetch('/api/portfolio')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.data?.projects && Array.isArray(data.data.projects) && data.data.projects.length > 0) {
+          // Filter out drafts if any sneaked in
+          const published = data.data.projects.filter((p: Project) => !p.status || p.status === 'published');
+          // Sort by sortOrder
+          published.sort((a: Project, b: Project) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+          setProjectList(published);
+        }
+      })
+      .catch(() => {
+        // Safe fallback to static default projects
+      });
+  }, []);
 
   const categories = [
     { id: 'all', label: 'All Projects' },
     { id: 'flagship', label: 'Tier S Flagships' },
+    { id: 'featured', label: 'Featured Systems' },
     { id: 'E-commerce', label: 'E-Commerce' },
     { id: 'Realtime', label: 'Real-Time' },
     { id: 'Social', label: 'Social Platform' },
     { id: 'Full Stack', label: 'Full Stack' },
   ];
 
-  const filteredProjects = projects.filter((project) => {
+  const filteredProjects = projectList.filter((project) => {
     if (filter === 'all') return true;
     if (filter === 'flagship') return project.tier === 'S';
+    if (filter === 'featured') return Boolean(project.featured);
     return project.category === filter;
   });
 
@@ -97,6 +119,11 @@ export function SelectedWork() {
                       Tier {project.tier}
                     </span>
                     <span className="text-xs font-mono text-muted-foreground">{project.category}</span>
+                    {project.featured && (
+                      <span className="px-2 py-0.5 rounded bg-primary/15 border border-primary/30 text-[10px] font-mono text-primary font-bold">
+                        ★ FEATURED
+                      </span>
+                    )}
                   </div>
                   <span className="text-xs font-mono text-muted-foreground">{project.year}</span>
                 </div>
@@ -167,6 +194,7 @@ export function SelectedWork() {
                       href={project.links.github}
                       target="_blank"
                       rel="noreferrer"
+                      onClick={() => trackEvent('github_click', { projectSlug: project.slug })}
                       className="p-2 rounded-lg bg-surface-elevated hover:bg-muted border border-border text-muted-foreground hover:text-foreground transition-colors"
                       title="GitHub Repository"
                       data-cursor="CODE"
@@ -180,6 +208,7 @@ export function SelectedWork() {
                       href={project.links.live}
                       target="_blank"
                       rel="noreferrer"
+                      onClick={() => trackEvent('live_demo_click', { projectSlug: project.slug })}
                       className="p-2 rounded-lg bg-primary/15 hover:bg-primary/25 border border-border-accent text-primary transition-colors"
                       title="Live Production Demo"
                       data-cursor="LIVE"
@@ -196,4 +225,5 @@ export function SelectedWork() {
     </section>
   );
 }
+
 export default SelectedWork;

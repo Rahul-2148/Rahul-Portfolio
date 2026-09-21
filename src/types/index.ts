@@ -3,6 +3,7 @@
    ============================================ */
 
 export interface Project {
+  _id?: string;
   slug: string;
   name: string;
   tagline: string;
@@ -10,6 +11,9 @@ export interface Project {
   category: ProjectCategory;
   tier: 'S' | 'A' | 'B' | 'C';
   type: string;
+  status?: 'published' | 'draft' | 'archived';
+  featured?: boolean;
+  sortOrder?: number;
   technologies: string[];
   features: string[];
   links: {
@@ -18,6 +22,9 @@ export interface Project {
     caseStudy?: string;
   };
   image?: string;
+  gallery?: string[];
+  heroImage?: string;
+  videoUrl?: string;
   color: string;
   year: string;
   role: string;
@@ -26,6 +33,26 @@ export interface Project {
   challenges?: Challenge[];
   decisions?: TechnicalDecision[];
   metrics?: Metric[];
+  caseStudyContent?: {
+    overview?: string;
+    problem?: string;
+    goals?: string[];
+    solutions?: string;
+    lessonsLearned?: string[];
+  };
+  seo?: {
+    metaTitle?: string;
+    metaDescription?: string;
+    ogImage?: string;
+  };
+  stats?: {
+    views?: number;
+    uniqueVisitors?: number;
+    liveClicks?: number;
+    githubClicks?: number;
+  };
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
 }
 
 export type ProjectCategory =
@@ -72,11 +99,18 @@ export interface Metric {
 }
 
 export interface Skill {
+  _id?: string;
   name: string;
+  slug?: string;
   category: SkillCategory;
   level: 'core' | 'proficient' | 'familiar';
-  projects: string[];
+  projects?: string[];
   description?: string;
+  icon?: string;
+  color?: string;
+  officialUrl?: string;
+  sortOrder?: number;
+  active?: boolean;
 }
 
 export type SkillCategory =
@@ -86,7 +120,8 @@ export type SkillCategory =
   | 'Realtime'
   | 'AI'
   | 'DevOps'
-  | 'Cloud';
+  | 'Cloud'
+  | 'Tools';
 
 export interface Experience {
   company: string;
