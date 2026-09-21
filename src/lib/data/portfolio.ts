@@ -621,3 +621,6 @@ export const engineeringDomains = [
     ],
   },
 ];
+
+export const experiences = experience;
+

@@ -141,6 +141,16 @@ export function CommandPalette() {
         setIsOpen(false);
       },
     },
+    {
+      id: 'admin',
+      label: 'Admin Studio (Secret Dashboard)',
+      category: 'Actions',
+      icon: Terminal,
+      action: () => {
+        router.push('/admin');
+        setIsOpen(false);
+      },
+    },
     ...themes.map((t) => ({
       id: `theme-${t.id}`,
       label: `Switch Theme: ${t.name} (${t.label})`,

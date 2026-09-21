@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Terminal as TerminalIcon, X, CornerDownLeft } from 'lucide-react';
 import { projects, personalInfo, skills } from '@/lib/data/portfolio';
 import { themes, setTheme, ThemeId } from '@/lib/theme';
@@ -11,6 +12,7 @@ interface CommandOutput {
 }
 
 export function DeveloperTerminal() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<CommandOutput[]>([
@@ -69,6 +71,7 @@ export function DeveloperTerminal() {
               <div><span className="text-primary font-mono">date</span> — System ISO timestamp</div>
               <div><span className="text-primary font-mono">contact</span> — Get direct contact links</div>
               <div><span className="text-primary font-mono">github</span> — Open GitHub in browser</div>
+              <div><span className="text-primary font-mono">admin</span> — Open Secret Admin Studio (/admin)</div>
               <div><span className="text-primary font-mono">theme</span> — Switch color theme tokens (cyber-cyan, synth-violet, matrix-emerald, solar-amber, crimson-overdrive, studio-light)</div>
               <div><span className="text-primary font-mono">clear</span> — Clear the terminal screen</div>
               <div><span className="text-primary font-mono">exit</span> — Close developer terminal</div>
@@ -184,7 +187,10 @@ export function DeveloperTerminal() {
         return;
 
       case 'sudo':
-        res = <p className="text-xs text-destructive">Permission denied: You are a guest in Rahul&apos;s workspace. Full access granted upon hiring.</p>;
+      case 'admin':
+        router.push('/admin');
+        setIsOpen(false);
+        res = <p className="text-xs text-primary font-mono">Launching Secret Admin Studio (/admin)...</p>;
         break;
 
       default:

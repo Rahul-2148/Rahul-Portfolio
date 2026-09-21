@@ -98,6 +98,37 @@ export interface Experience {
   current?: boolean;
 }
 
+export interface Education {
+  id?: string;
+  institution: string;
+  degree: string;
+  field?: string;
+  duration: string;
+  score?: string;
+  location?: string;
+  achievements?: string[];
+}
+
+export interface PersonalInfo {
+  name: string;
+  role: string;
+  tagline: string;
+  bio: string;
+  github: string;
+  email: string;
+  location: string;
+  available: boolean;
+  resumeUrl?: string;
+}
+
+export interface PortfolioData {
+  personalInfo: PersonalInfo;
+  projects: Project[];
+  experiences: Experience[];
+  educations: Education[];
+  skills: Skill[];
+}
+
 export interface NavItem {
   label: string;
   href: string;
