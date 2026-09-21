@@ -8,7 +8,13 @@ export type AnalyticsEventType =
   | 'github_click'
   | 'resume_download'
   | 'contact_open'
-  | 'contact_submit';
+  | 'contact_submit'
+  | 'ai_lab_open'
+  | 'ai_message'
+  | 'case_study_view'
+  | 'section_interact'
+  | 'skill_view'
+  | 'external_link_click';
 
 export interface IAnalyticsEvent extends Document {
   eventType: AnalyticsEventType;

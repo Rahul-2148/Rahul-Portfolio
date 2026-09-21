@@ -6,7 +6,16 @@ import { GithubIcon } from '@/components/ui/Icons';
 import { personalInfo } from '@/lib/data/portfolio';
 
 export default function ContactPage() {
-  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    subject: 'New Portfolio Inquiry',
+    company: '',
+    projectType: 'Full-Stack Architecture',
+    budget: '$5k - $15k',
+    message: '',
+    website: '', // Invisible honeypot field
+  });
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [copied, setCopied] = useState(false);
@@ -26,13 +35,25 @@ export default function ContactPage() {
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          sourceUrl: '/contact',
+        }),
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
         setStatus('success');
-        setFormData({ name: '', email: '', message: '' });
+        setFormData({
+          name: '',
+          email: '',
+          subject: 'New Portfolio Inquiry',
+          company: '',
+          projectType: 'Full-Stack Architecture',
+          budget: '$5k - $15k',
+          message: '',
+          website: '',
+        });
       } else {
         setStatus('error');
         setErrorMessage(data.message || 'Failed to deliver message. Please reach out directly via email.');
@@ -150,31 +171,110 @@ export default function ContactPage() {
                 </div>
               )}
 
-              <div>
-                <label className="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">
-                  Your Name / Organization *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g. Sarah Jenkins or TechCorp Engineering"
-                  className="w-full bg-surface border border-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-border-accent transition-colors"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">
+                    Your Name / Organization *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g. Sarah Jenkins"
+                    className="w-full bg-surface border border-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-border-accent transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">
+                    Company / Entity (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.company}
+                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    placeholder="e.g. Acme Cloud Corp"
+                    className="w-full bg-surface border border-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-border-accent transition-colors"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">
-                  Email Address *
-                </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="sarah@example.com"
+                    className="w-full bg-surface border border-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-border-accent transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">
+                    Transmission Subject
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.subject}
+                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                    placeholder="e.g. Principal Engineer Role / Contract"
+                    className="w-full bg-surface border border-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-border-accent transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Scope & Budget Pills */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
+                <div>
+                  <label className="block uppercase tracking-wider text-muted-foreground mb-2">
+                    Project Type / Engagement
+                  </label>
+                  <select
+                    value={formData.projectType}
+                    onChange={(e) => setFormData({ ...formData, projectType: e.target.value })}
+                    className="w-full bg-surface border border-input rounded-xl px-3.5 py-3 text-sm text-foreground focus:outline-none focus:border-border-accent transition-colors"
+                  >
+                    <option value="Full-Stack Architecture">Full-Stack Architecture</option>
+                    <option value="AI / LLM Systems">AI / LLM Systems</option>
+                    <option value="Real-Time Systems & Event Pipelines">Real-Time Systems &amp; Event Pipelines</option>
+                    <option value="Full-Time Engineering Role">Full-Time Engineering Role</option>
+                    <option value="Technical Advisory / Consulting">Technical Advisory / Consulting</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block uppercase tracking-wider text-muted-foreground mb-2">
+                    Approximate Budget (Optional)
+                  </label>
+                  <select
+                    value={formData.budget}
+                    onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                    className="w-full bg-surface border border-input rounded-xl px-3.5 py-3 text-sm text-foreground focus:outline-none focus:border-border-accent transition-colors"
+                  >
+                    <option value="< $5k">&lt; $5,000</option>
+                    <option value="$5k - $15k">$5,000 - $15,000</option>
+                    <option value="$15k - $30k">$15,000 - $30,000</option>
+                    <option value="$30k+">$30,000+</option>
+                    <option value="Salary / Equity">Salary / Equity Offer</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Invisible Honeypot Field for Spam Bot Protection */}
+              <div className="hidden" aria-hidden="true">
                 <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="sarah@example.com"
-                  className="w-full bg-surface border border-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-border-accent transition-colors"
+                  type="text"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={formData.website}
+                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                 />
               </div>
 
@@ -191,6 +291,7 @@ export default function ContactPage() {
                   className="w-full bg-surface border border-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-border-accent transition-colors"
                 />
               </div>
+
 
               <button
                 type="submit"

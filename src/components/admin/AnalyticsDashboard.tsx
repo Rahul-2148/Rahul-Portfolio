@@ -12,7 +12,11 @@ import {
   Globe,
   RefreshCw,
   Search,
+  Sparkles,
+  Compass,
+  Layers,
 } from 'lucide-react';
+
 import { Project } from '@/types';
 
 interface AnalyticsPayload {
@@ -44,6 +48,23 @@ interface AnalyticsPayload {
     events: number;
   }>;
   projectStats: Project[];
+  mostUsedFeatures?: {
+    hasData: boolean;
+    totalUsage: number;
+    items: Array<{
+      id: string;
+      rank: string;
+      name: string;
+      count: number;
+      percentage: number;
+      category: string;
+    }>;
+  };
+  mostInteractedSections?: Array<{
+    path: string;
+    title: string;
+    interactions: number;
+  }>;
   recruiters: Array<{
     _id: string;
     name: string;
@@ -320,8 +341,133 @@ export function AnalyticsDashboard() {
         )}
       </div>
 
+      {/* ========================================================
+          MOST USED FEATURES & SECTIONS ENGAGEMENT
+          ======================================================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Most Used Features Card */}
+        <div className="lg:col-span-7 p-6 sm:p-8 rounded-3xl bg-card border border-border space-y-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <h3 className="text-base font-bold font-mono text-foreground">
+                  Most Used Features
+                </h3>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Calculated dynamically from verified interaction events (not simple pageviews)
+              </p>
+            </div>
+            <span className="self-start sm:self-auto px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-mono font-bold">
+              Real Event Telemetry
+            </span>
+          </div>
+
+          {!data?.mostUsedFeatures?.hasData ? (
+            <div className="py-12 px-4 rounded-2xl bg-surface/50 border border-dashed border-border text-center space-y-2">
+              <Compass className="w-8 h-8 text-muted-foreground/40 mx-auto" />
+              <div className="text-sm font-mono font-bold text-foreground">Not enough data yet</div>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto font-mono">
+                Feature rankings calculate automatically as visitors explore projects, run AI queries, view architecture, and submit messages.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3 font-mono">
+              {data.mostUsedFeatures.items.map((feat) => (
+                <div
+                  key={feat.id}
+                  className="p-3.5 rounded-xl bg-surface border border-border hover:border-primary/40 transition-all flex items-center justify-between gap-4 group"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <span className="text-sm font-black text-muted-foreground group-hover:text-primary transition-colors">
+                      {feat.rank}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                        {feat.name}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground truncate">
+                        {feat.category}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 shrink-0">
+                    <div className="w-24 hidden sm:block">
+                      <div className="h-1.5 w-full rounded-full bg-surface-elevated overflow-hidden">
+                        <div
+                          style={{ width: `${Math.max(5, feat.percentage)}%` }}
+                          className="h-full bg-primary rounded-full transition-all"
+                        />
+                      </div>
+                    </div>
+                    <div className="text-right min-w-[70px]">
+                      <div className="text-sm font-black text-foreground">
+                        {feat.count.toLocaleString()}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {feat.percentage}% share
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Most Interacted Sections Card */}
+        <div className="lg:col-span-5 p-6 sm:p-8 rounded-3xl bg-card border border-border space-y-6 shadow-sm">
+          <div className="flex items-center justify-between border-b border-border pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-base font-bold font-mono text-foreground">
+                  Top Visited Sections
+                </h3>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Path-level interaction distribution
+              </p>
+            </div>
+          </div>
+
+          {(!data?.mostInteractedSections || data.mostInteractedSections.length === 0) ? (
+            <div className="py-12 text-center text-xs font-mono text-muted-foreground">
+              No section interactions recorded in this period.
+            </div>
+          ) : (
+            <div className="space-y-2.5 font-mono">
+              {data.mostInteractedSections.map((sec, idx) => (
+                <div
+                  key={sec.path}
+                  className="p-3 rounded-xl bg-surface border border-border flex items-center justify-between gap-3 text-xs"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-[10px] text-muted-foreground font-bold">
+                      #{idx + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="font-bold text-foreground truncate">{sec.title}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">{sec.path}</div>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
+                      {sec.interactions.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Breakdowns Grid: Devices, Browsers, Referrers */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
         {/* Device Distribution */}
         <div className="p-6 rounded-2xl bg-card border border-border space-y-4 shadow-sm">
           <h4 className="text-xs font-mono uppercase tracking-widest text-foreground font-bold flex items-center gap-2">

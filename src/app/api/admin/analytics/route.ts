@@ -196,6 +196,92 @@ export async function GET(req: NextRequest) {
     ]);
     const allTimeViews = viewsAgg[0]?.totalViews || totalVisitorsCount;
 
+    // 1. Calculate genuine "Most Used Features" from recorded events
+    const rawFeatures = [
+      {
+        id: 'projects',
+        name: 'Project Exploration',
+        count: (eventsMap['project_view'] || 0) + (eventsMap['live_demo_click'] || 0),
+        category: 'Interactive CMS',
+      },
+      {
+        id: 'ai_assistant',
+        name: 'AI Portfolio Assistant',
+        count: (eventsMap['ai_lab_open'] || 0) + (eventsMap['ai_message'] || 0),
+        category: 'AI Engine',
+      },
+      {
+        id: 'resume',
+        name: 'Resume & Credentials',
+        count: (eventsMap['resume_download'] || 0) + (eventsMap['resume_view'] || 0),
+        category: 'Career Documents',
+      },
+      {
+        id: 'case_studies',
+        name: 'Case Studies & Architecture',
+        count: eventsMap['case_study_view'] || 0,
+        category: 'Engineering Architecture',
+      },
+      {
+        id: 'github',
+        name: 'GitHub Source Repositories',
+        count: eventsMap['github_click'] || 0,
+        category: 'Code Links',
+      },
+      {
+        id: 'contact',
+        name: 'Contact & Inquiries',
+        count: (eventsMap['contact_submit'] || 0) + (eventsMap['contact_open'] || 0),
+        category: 'Transmission Channel',
+      },
+    ];
+
+    const totalFeatureUsage = rawFeatures.reduce((acc, f) => acc + f.count, 0);
+    const hasEnoughData = totalFeatureUsage > 0;
+
+    const mostUsedFeatures = rawFeatures
+      .sort((a, b) => b.count - a.count)
+      .map((item, index) => ({
+        ...item,
+        rank: String(index + 1).padStart(2, '0'),
+        percentage: totalFeatureUsage > 0 ? Math.round((item.count / totalFeatureUsage) * 100) : 0,
+      }));
+
+    // 2. Calculate "Most Interacted Sections" from recorded events
+    const pathCountsAgg = await AnalyticsEventModel.aggregate([
+      { $match: eventFilter },
+      { $group: { _id: '$path', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 },
+    ]);
+
+    const sectionMapping: Record<string, string> = {
+      '/': 'Overview / Home',
+      '/engineering': 'Engineering Architecture',
+      '/ai-lab': 'AI Innovation Lab',
+      '/about': 'About & Philosophy',
+      '/experience': 'Career Experience',
+      '/resume': 'Resume & Credentials',
+      '/contact': 'Direct Contact Channel',
+    };
+
+    const mostInteractedSections = pathCountsAgg.map((item) => {
+      const p = item._id || '/';
+      let title = sectionMapping[p];
+      if (!title) {
+        if (p.startsWith('/work/')) {
+          title = `Project: ${p.replace('/work/', '')}`;
+        } else {
+          title = p;
+        }
+      }
+      return {
+        path: p,
+        title,
+        interactions: item.count,
+      };
+    });
+
     return NextResponse.json({
       isConnected: true,
       period,
@@ -215,6 +301,12 @@ export async function GET(req: NextRequest) {
         resumeDownloads: eventsMap['resume_download'] || 0,
         contactSubmits: eventsMap['contact_submit'] || 0,
       },
+      mostUsedFeatures: {
+        hasData: hasEnoughData,
+        totalUsage: totalFeatureUsage,
+        items: mostUsedFeatures,
+      },
+      mostInteractedSections,
       devices,
       browsers,
       referrers,
@@ -228,3 +320,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
