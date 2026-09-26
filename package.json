@@ -1,6 +1,12 @@
 {
   "name": "rahul-portfolio",
   "version": "0.1.0",
+  "description": "Rahul Raj — Full-Stack Engineer & AI Systems Architect Portfolio",
+  "author": {
+    "name": "Rahul Raj",
+    "email": "rahulraj21480@gmail.com",
+    "url": "https://github.com/Rahul-2148"
+  },
   "private": true,
   "scripts": {
     "dev": "next dev",
