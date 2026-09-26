@@ -11,6 +11,9 @@ export interface Project {
   category: ProjectCategory;
   tier: 'S' | 'A' | 'B' | 'C';
   type: string;
+  vendorModel?: VendorModel | string;
+  portalsCount?: number;
+  portalsList?: string[];
   status?: 'published' | 'draft' | 'archived';
   featured?: boolean;
   sortOrder?: number;
@@ -66,6 +69,14 @@ export type ProjectCategory =
   | 'Automation'
   | 'Experimental';
 
+export type VendorModel =
+  | 'Multi-Vendor Marketplace'
+  | 'Single-Vendor Direct'
+  | 'Quick-Commerce Hub'
+  | 'On-Demand Service'
+  | 'Social Network'
+  | 'SaaS Platform';
+
 export interface ArchitectureNode {
   id: string;
   label: string;
@@ -98,11 +109,15 @@ export interface Metric {
   description?: string;
 }
 
+export type SkillDomain = 'IT' | 'Non-IT';
+
 export interface Skill {
   _id?: string;
   name: string;
   slug?: string;
-  category: SkillCategory;
+  domain?: SkillDomain;
+  techType?: string;
+  category: SkillCategory | string;
   level: 'core' | 'proficient' | 'familiar';
   projects?: string[];
   description?: string;
@@ -121,7 +136,14 @@ export type SkillCategory =
   | 'AI'
   | 'DevOps'
   | 'Cloud'
-  | 'Tools';
+  | 'Tools'
+  | 'Design'
+  | 'BPO & Operations'
+  | 'Office & Analytics'
+  | 'Creative & Media'
+  | 'Supply Chain'
+  | 'Manufacturing'
+  | 'Management';
 
 export interface Experience {
   company: string;
@@ -144,16 +166,50 @@ export interface Education {
   achievements?: string[];
 }
 
+export interface ResumeItem {
+  id: string;
+  title: string;
+  category: string;
+  url: string;
+  publicId?: string;
+  fileSize?: string;
+  format?: string;
+  isPrimary?: boolean;
+  uploadedAt?: string | Date;
+  description?: string;
+}
+
+export interface Achievement {
+  id: string;
+  title: string;
+  issuer: string;
+  date: string;
+  category: 'certification' | 'award' | 'hackathon' | 'milestone';
+  credentialUrl?: string;
+  url?: string;
+  description?: string;
+  skills?: string[];
+}
+
 export interface PersonalInfo {
   name: string;
   role: string;
   tagline: string;
   bio: string;
   github: string;
+  linkedin?: string;
+  twitter?: string;
+  instagram?: string;
+  leetcode?: string;
+  codeforces?: string;
   email: string;
   location: string;
   available: boolean;
   resumeUrl?: string;
+  dateOfBirth?: string;
+  education?: string;
+  avatarUrl?: string;
+  avatarPublicId?: string;
 }
 
 export interface PortfolioData {
@@ -162,6 +218,8 @@ export interface PortfolioData {
   experiences: Experience[];
   educations: Education[];
   skills: Skill[];
+  resumes?: ResumeItem[];
+  achievements?: Achievement[];
 }
 
 export interface NavItem {

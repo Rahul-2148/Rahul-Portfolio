@@ -1,48 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { PortfolioModel } from '@/lib/db/models/Portfolio';
+import { checkAdminAuth } from '@/lib/auth/adminAuth';
 import {
   personalInfo as defaultPersonalInfo,
   projects as defaultProjects,
   experiences as defaultExperiences,
   skills as defaultSkills,
 } from '@/lib/data/portfolio';
-import { Education } from '@/types';
-
-const defaultEducations: Education[] = [
-  {
-    institution: 'APJ Abdul Kalam Technological University',
-    degree: 'Bachelor of Technology (B.Tech)',
-    field: 'Computer Science & Engineering',
-    duration: '2021 — 2025',
-    score: 'First Class with Distinction',
-    location: 'India',
-    achievements: [
-      'Core coursework: Data Structures, Distributed Systems, Database Management Systems, Computer Networks, AI Systems',
-      'Architected full-stack event systems and multi-portal micro-frontends',
-    ],
-  },
-];
-
-function checkAuth(req: NextRequest): boolean {
-  const cookieToken = req.cookies.get('portfolio_admin_token')?.value;
-  const headerToken = req.headers.get('x-admin-passcode');
-  const correctPasscode = process.env.ADMIN_PASSCODE || 'rahul2148';
-  const expectedToken = 'authenticated_' + Buffer.from(correctPasscode).toString('base64');
-
-  if (cookieToken === expectedToken) return true;
-  if (headerToken === correctPasscode) return true;
-  return false;
-}
 
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) {
+  const isAuth = await checkAdminAuth(req);
+  if (!isAuth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     const mongooseConn = await connectToDatabase();
     const isConnected = Boolean(mongooseConn);
+
+    const {
+      resumes: defaultResumes,
+      achievements: defaultAchievements,
+    } = await import('@/lib/data/portfolio');
 
     if (!isConnected) {
       return NextResponse.json({
@@ -54,8 +34,10 @@ export async function GET(req: NextRequest) {
           personalInfo: defaultPersonalInfo,
           projects: defaultProjects,
           experiences: defaultExperiences,
-          educations: defaultEducations,
+          educations: [],
           skills: defaultSkills,
+          resumes: defaultResumes,
+          achievements: defaultAchievements,
         },
       });
     }
@@ -72,8 +54,10 @@ export async function GET(req: NextRequest) {
           personalInfo: defaultPersonalInfo,
           projects: defaultProjects,
           experiences: defaultExperiences,
-          educations: defaultEducations,
+          educations: [],
           skills: defaultSkills,
+          resumes: defaultResumes,
+          achievements: defaultAchievements,
         },
       });
     }
@@ -87,8 +71,10 @@ export async function GET(req: NextRequest) {
         personalInfo: doc.personalInfo || defaultPersonalInfo,
         projects: doc.projects || defaultProjects,
         experiences: doc.experiences || defaultExperiences,
-        educations: doc.educations || defaultEducations,
+        educations: doc.educations || [],
         skills: doc.skills || defaultSkills,
+        resumes: doc.resumes || [],
+        achievements: doc.achievements || [],
       },
     });
   } catch (err) {
@@ -102,7 +88,7 @@ export async function GET(req: NextRequest) {
           personalInfo: defaultPersonalInfo,
           projects: defaultProjects,
           experiences: defaultExperiences,
-          educations: defaultEducations,
+          educations: [],
           skills: defaultSkills,
         },
       },
@@ -112,7 +98,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) {
+  const isAuth = await checkAdminAuth(req);
+  if (!isAuth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -143,7 +130,6 @@ export async function POST(req: NextRequest) {
             personalInfo: defaultPersonalInfo,
             projects: defaultProjects,
             experiences: defaultExperiences,
-            educations: defaultEducations,
             skills: defaultSkills,
           },
         },

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Cpu, Server, Radio, Database, ShieldCheck, Sparkles, Code2 } from 'lucide-react';
 import { TechEcosystem } from '@/components/sections/TechEcosystem';
+import { TechIcon } from '@/components/ui/TechIcons';
 import { engineeringDomains } from '@/lib/data/portfolio';
 
 export const metadata = {
@@ -19,7 +20,7 @@ export default function EngineeringPage() {
   };
 
   return (
-    <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-20">
+    <div className="pt-1 sm:pt-2 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 sm:space-y-10">
       {/* Header */}
       <div className="max-w-3xl space-y-4">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent border border-border-accent text-accent-foreground text-xs font-mono">
@@ -72,9 +73,10 @@ export default function EngineeringPage() {
                 {domain.technologies.map((t) => (
                   <span
                     key={t}
-                    className="px-2 py-0.5 rounded bg-surface-elevated border border-border text-[11px] font-mono text-muted-foreground"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-elevated border border-border text-[11px] font-mono text-foreground font-medium"
                   >
-                    {t}
+                    <TechIcon name={t} className="w-3.5 h-3.5 shrink-0" />
+                    <span>{t}</span>
                   </span>
                 ))}
               </div>
@@ -84,7 +86,7 @@ export default function EngineeringPage() {
       </div>
 
       {/* Interactive Tech Ecosystem Section */}
-      <div className="border-t border-border pt-12">
+      <div className="border-t border-border pt-4">
         <TechEcosystem />
       </div>
 

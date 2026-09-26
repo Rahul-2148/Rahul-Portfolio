@@ -38,6 +38,7 @@ export function SpotlightCard({
         'group relative rounded-2xl border border-border bg-card text-card-foreground shadow-xl overflow-hidden transition-all duration-300 card-beam',
         className
       )}
+      suppressHydrationWarning
       {...props}
     >
       {/* Dynamic Cursor Spotlight Layer */}

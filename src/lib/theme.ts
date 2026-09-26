@@ -1,114 +1,94 @@
-export type ThemeId =
-  | 'cyber-cyan'
-  | 'synth-violet'
-  | 'matrix-emerald'
-  | 'solar-amber'
-  | 'crimson-overdrive'
-  | 'studio-light';
+export type ThemeMode = 'dark' | 'light';
 
 export interface ThemeConfig {
-  id: ThemeId;
+  id: ThemeMode;
   name: string;
   label: string;
-  motif: string;
-  motifDescription: string;
-  mode: 'dark' | 'light';
+  mode: ThemeMode;
   primaryColor: string;
   secondaryColor: string;
   accentRgb: string;
 }
 
-export const themes: ThemeConfig[] = [
-  {
-    id: 'cyber-cyan',
-    name: 'Cyber Cyan',
-    label: 'Electric Cyan & Deep Cobalt',
-    motif: 'Cyber Blueprint',
-    motifDescription: 'Technical grid & HUD telemetry',
+export const themes: Record<ThemeMode, ThemeConfig> = {
+  dark: {
+    id: 'dark',
+    name: 'Dark',
+    label: 'Deep Neural Slate',
     mode: 'dark',
-    primaryColor: '#00f0ff',
-    secondaryColor: '#3b82f6',
-    accentRgb: '0, 240, 255',
+    primaryColor: '#6366f1',
+    secondaryColor: '#38bdf8',
+    accentRgb: '99, 102, 241',
   },
-  {
-    id: 'synth-violet',
-    name: 'Synth Violet',
-    label: 'Neon Purple & Radiant Pink',
-    motif: 'Neon Aurora',
-    motifDescription: 'Organic mesh glow & starlight',
-    mode: 'dark',
-    primaryColor: '#a855f7',
-    secondaryColor: '#ec4899',
-    accentRgb: '168, 85, 247',
-  },
-  {
-    id: 'matrix-emerald',
-    name: 'Matrix Emerald',
-    label: 'Cybernetic Terminal Green',
-    motif: 'Phosphor Matrix',
-    motifDescription: 'Terminal dot-matrix & scanlines',
-    mode: 'dark',
-    primaryColor: '#10b981',
-    secondaryColor: '#06b6d4',
-    accentRgb: '16, 185, 129',
-  },
-  {
-    id: 'solar-amber',
-    name: 'Solar Amber',
-    label: 'High Voltage Gold & Flare',
-    motif: 'Industrial CAD',
-    motifDescription: 'Drafting hatched linework & spotlight',
-    mode: 'dark',
-    primaryColor: '#f59e0b',
-    secondaryColor: '#f97316',
-    accentRgb: '245, 158, 11',
-  },
-  {
-    id: 'crimson-overdrive',
-    name: 'Crimson Overdrive',
-    label: 'High Performance Neon Red',
-    motif: 'Kinetic Circuit',
-    motifDescription: 'Angular traces & energy rim',
-    mode: 'dark',
-    primaryColor: '#ff2a5f',
-    secondaryColor: '#fb923c',
-    accentRgb: '255, 42, 95',
-  },
-  {
-    id: 'studio-light',
-    name: 'Studio Light',
-    label: 'Clean Editorial Studio White',
-    motif: 'Swiss Minimalist',
-    motifDescription: 'Architectural dot-grid & crosshairs',
+  light: {
+    id: 'light',
+    name: 'Light',
+    label: 'Clean Architectural Paper',
     mode: 'light',
-    primaryColor: '#0066cc',
+    primaryColor: '#4338ca',
     secondaryColor: '#0284c7',
-    accentRgb: '0, 102, 204',
+    accentRgb: '67, 56, 202',
   },
-];
+};
 
-export const DEFAULT_THEME: ThemeId = 'cyber-cyan';
+export const DEFAULT_THEME: ThemeMode = 'dark';
 
-export function getStoredTheme(): ThemeId {
+export function getStoredTheme(): ThemeMode {
   if (typeof window === 'undefined') return DEFAULT_THEME;
-  const stored = localStorage.getItem('rahul-portfolio-theme') as ThemeId | null;
-  if (stored && themes.some((t) => t.id === stored)) {
-    return stored;
+  try {
+    const docTheme = document.documentElement.getAttribute('data-theme') as ThemeMode | null;
+    if (docTheme === 'dark' || docTheme === 'light') {
+      return docTheme;
+    }
+    const stored = localStorage.getItem('rahul-portfolio-theme') as ThemeMode | null;
+    if (stored === 'dark' || stored === 'light') {
+      return stored;
+    }
+  } catch {
+    // LocalStorage access might be blocked
   }
   return DEFAULT_THEME;
 }
 
-export function setTheme(themeId: ThemeId) {
+let transitionTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function setTheme(theme: ThemeMode) {
   if (typeof window === 'undefined') return;
-  document.documentElement.setAttribute('data-theme', themeId);
-  const config = themes.find((t) => t.id === themeId);
-  if (config?.mode === 'light') {
-    document.documentElement.classList.remove('dark');
-    document.documentElement.classList.add('light');
-  } else {
-    document.documentElement.classList.remove('light');
-    document.documentElement.classList.add('dark');
+  const root = document.documentElement;
+  
+  if (transitionTimer) {
+    clearTimeout(transitionTimer);
   }
-  localStorage.setItem('rahul-portfolio-theme', themeId);
-  window.dispatchEvent(new CustomEvent('theme-changed', { detail: themeId }));
+
+  // Smoothly transition colors during explicit user clicks
+  root.classList.add('theme-transitioning');
+  root.setAttribute('data-theme', theme);
+  
+  if (theme === 'light') {
+    root.classList.remove('dark');
+    root.classList.add('light');
+  } else {
+    root.classList.remove('light');
+    root.classList.add('dark');
+  }
+  
+  try {
+    localStorage.setItem('rahul-portfolio-theme', theme);
+  } catch {
+    // Ignore storage quota or disabled storage
+  }
+  
+  window.dispatchEvent(new CustomEvent('theme-changed', { detail: theme }));
+
+  transitionTimer = setTimeout(() => {
+    root.classList.remove('theme-transitioning');
+    transitionTimer = null;
+  }, 250);
+}
+
+export function toggleTheme(): ThemeMode {
+  const current = getStoredTheme();
+  const next: ThemeMode = current === 'dark' ? 'light' : 'dark';
+  setTheme(next);
+  return next;
 }

@@ -15,7 +15,7 @@ export interface IPresence extends Document {
 const PresenceSchema = new Schema<IPresence>(
   {
     visitorId: { type: String, required: true, unique: true, index: true },
-    lastHeartbeat: { type: Date, default: Date.now, index: true },
+    lastHeartbeat: { type: Date, default: Date.now },
     path: { type: String, default: '/' },
     device: { type: String, default: 'desktop' },
     browser: { type: String, default: 'unknown' },

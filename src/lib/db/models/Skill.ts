@@ -9,9 +9,14 @@ const SkillSchema = new Schema<ISkillDoc>(
   {
     name: { type: String, required: true, unique: true, trim: true },
     slug: { type: String, unique: true, lowercase: true, trim: true, index: true },
+    domain: {
+      type: String,
+      enum: ['IT', 'Non-IT'],
+      default: 'IT',
+      index: true,
+    },
     category: {
       type: String,
-      enum: ['Frontend', 'Backend', 'Database', 'Realtime', 'AI', 'DevOps', 'Cloud', 'Tools'],
       default: 'Frontend',
       index: true,
     },

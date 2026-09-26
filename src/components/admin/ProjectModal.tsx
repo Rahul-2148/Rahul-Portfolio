@@ -15,6 +15,10 @@ import {
   CheckCircle2,
   Eye,
   Sliders,
+  UploadCloud,
+  Folder,
+  Star,
+  Loader2,
 } from 'lucide-react';
 import { Project, Skill, ProjectCategory, ArchitectureNode, Metric } from '@/types';
 
@@ -45,6 +49,7 @@ export function ProjectModal({
   const [category, setCategory] = useState<ProjectCategory>('Full Stack');
   const [tier, setTier] = useState<'S' | 'A' | 'B' | 'C'>('A');
   const [type, setType] = useState('Web Application');
+  const [vendorModel, setVendorModel] = useState('');
   const [status, setStatus] = useState<'published' | 'draft' | 'archived'>('published');
   const [featured, setFeatured] = useState(false);
   const [year, setYear] = useState('2025');
@@ -58,6 +63,9 @@ export function ProjectModal({
   const [videoUrl, setVideoUrl] = useState('');
   const [gallery, setGallery] = useState<string[]>([]);
   const [newGalleryUrl, setNewGalleryUrl] = useState('');
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
+  const [mediaMessage, setMediaMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   // Tech state
   const [selectedTech, setSelectedTech] = useState<string[]>([]);
@@ -100,6 +108,7 @@ export function ProjectModal({
       setCategory(project.category || 'Full Stack');
       setTier(project.tier || 'A');
       setType(project.type || 'Web Application');
+      setVendorModel(project.vendorModel || '');
       setStatus(project.status || 'published');
       setFeatured(Boolean(project.featured));
       setYear(project.year || '2025');
@@ -137,6 +146,7 @@ export function ProjectModal({
       setCategory('Full Stack');
       setTier('A');
       setType('Web Application');
+      setVendorModel('');
       setStatus('published');
       setFeatured(false);
       setYear(new Date().getFullYear().toString());
@@ -218,12 +228,157 @@ export function ProjectModal({
   const handleAddGalleryImage = () => {
     if (newGalleryUrl.trim()) {
       setGallery([...gallery, newGalleryUrl.trim()]);
+      if (!image) {
+        setImage(newGalleryUrl.trim());
+      }
       setNewGalleryUrl('');
     }
   };
 
-  const handleRemoveGalleryImage = (index: number) => {
-    setGallery(gallery.filter((_, i) => i !== index));
+  const handleSetAsPrimary = (imgUrl: string) => {
+    setImage(imgUrl);
+    setMediaMessage({
+      text: 'Selected as primary project thumbnail!',
+      type: 'success',
+    });
+  };
+
+  const handleMultiFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingImages(true);
+    setMediaMessage(null);
+    const targetSlug = (slug || name || 'general').toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+    const uploadedUrls: string[] = [];
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        setUploadProgress(`Uploading ${i + 1} of ${files.length}: ${file.name}...`);
+
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('type', 'project');
+        fd.append('projectSlug', targetSlug);
+
+        const res = await fetch('/api/admin/cloudinary/upload', {
+          method: 'POST',
+          body: fd,
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || `Failed to upload ${file.name}`);
+        }
+
+        uploadedUrls.push(data.url);
+      }
+
+      const updatedGallery = [...gallery, ...uploadedUrls];
+      setGallery(updatedGallery);
+
+      // If no primary thumbnail set, make first uploaded file the primary image
+      if (!image && uploadedUrls.length > 0) {
+        setImage(uploadedUrls[0]);
+      }
+
+      setMediaMessage({
+        text: `Successfully uploaded ${uploadedUrls.length} image(s) to Cloudinary folder "portfolio/projects/${targetSlug}"!`,
+        type: 'success',
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Upload failed';
+      setMediaMessage({ text: msg, type: 'error' });
+    } finally {
+      setUploadingImages(false);
+      setUploadProgress(null);
+      e.target.value = '';
+    }
+  };
+
+  const handleDeleteSingleImage = async (index: number) => {
+    const targetUrl = gallery[index];
+    if (!targetUrl) return;
+
+    // Extract publicId if hosted on Cloudinary
+    let publicId: string | null = null;
+    if (targetUrl.includes('cloudinary.com')) {
+      const match = targetUrl.match(/\/upload\/(?:v\d+\/)?([^.]+)/);
+      if (match && match[1]) publicId = match[1];
+    }
+
+    const updatedGallery = gallery.filter((_, i) => i !== index);
+    setGallery(updatedGallery);
+
+    // If deleting the active thumbnail, fall back to next available or blank
+    if (image === targetUrl) {
+      setImage(updatedGallery[0] || '');
+    }
+
+    if (publicId) {
+      try {
+        await fetch('/api/admin/cloudinary/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ publicId, resourceType: 'image' }),
+        });
+        setMediaMessage({
+          text: 'Image deleted from Cloudinary storage and project gallery.',
+          type: 'success',
+        });
+      } catch (err) {
+        console.warn('Cloudinary delete warning:', err);
+      }
+    } else {
+      setMediaMessage({
+        text: 'Image removed from project gallery.',
+        type: 'success',
+      });
+    }
+  };
+
+  const handleDeleteAllImages = async () => {
+    if (gallery.length === 0) return;
+    const confirmed = window.confirm(
+      `Are you sure you want to delete all ${gallery.length} images? This will permanently remove them from Cloudinary and this project.`
+    );
+    if (!confirmed) return;
+
+    const publicIds: string[] = [];
+    gallery.forEach((url) => {
+      if (url.includes('cloudinary.com')) {
+        const match = url.match(/\/upload\/(?:v\d+\/)?([^.]+)/);
+        if (match && match[1]) publicIds.push(match[1]);
+      }
+    });
+
+    const totalCount = gallery.length;
+    setGallery([]);
+    if (gallery.includes(image)) {
+      setImage('');
+    }
+
+    if (publicIds.length > 0) {
+      try {
+        await fetch('/api/admin/cloudinary/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ publicIds, resourceType: 'image' }),
+        });
+        setMediaMessage({
+          text: `Permanently deleted all ${totalCount} images from Cloudinary and project.`,
+          type: 'success',
+        });
+      } catch (err) {
+        console.warn('Cloudinary bulk delete error:', err);
+      }
+    } else {
+      setMediaMessage({
+        text: `Removed all ${totalCount} images from project gallery.`,
+        type: 'success',
+      });
+    }
   };
 
   const handleAddNode = () => {
@@ -278,6 +433,7 @@ export function ProjectModal({
         category,
         tier,
         type: type.trim(),
+        vendorModel: vendorModel.trim() || undefined,
         status: submitStatus,
         featured,
         year,
@@ -322,26 +478,39 @@ export function ProjectModal({
 
   if (!isOpen) return null;
 
+  const MODAL_TABS = [
+    { id: 'basic', label: '1. Basic Info', shortLabel: '1. Basic', icon: Sliders },
+    { id: 'media', label: '2. Media & Visuals', shortLabel: '2. Media', icon: ImageIcon },
+    { id: 'tech', label: '3. Technologies', shortLabel: '3. Tech', icon: Layers },
+    { id: 'features', label: '4. Highlights & KPIs', shortLabel: '4. KPIs', icon: CheckCircle2 },
+    { id: 'architecture', label: '5. Architecture Topology', shortLabel: '5. Arch', icon: Cpu },
+    { id: 'case_study', label: '6. Case Study', shortLabel: '6. Case', icon: BookOpen },
+    { id: 'seo', label: '7. Links & SEO', shortLabel: '7. SEO', icon: Link2 },
+  ] as const;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-5xl max-h-[90vh] bg-card border border-border rounded-3xl shadow-2xl flex flex-col overflow-hidden text-foreground">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+      <div
+        data-lenis-prevent
+        className="relative w-full max-w-5xl h-[95dvh] sm:h-auto sm:max-h-[90vh] bg-card border-t sm:border border-border rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden text-foreground overscroll-contain"
+      >
         {/* Top Header */}
-        <div className="px-6 py-4 border-b border-border bg-surface/80 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-              <Sparkles className="w-5 h-5" />
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border bg-surface/80 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-foreground">
-                {project ? `Edit Project: ${project.name}` : 'Add New Portfolio Project'}
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-lg font-bold text-foreground truncate">
+                {project ? `Edit: ${project.name}` : 'Add New Portfolio Project'}
               </h2>
-              <p className="text-xs font-mono text-muted-foreground">
+              <p className="text-[11px] sm:text-xs font-mono text-muted-foreground truncate">
                 {slug ? `slug: /work/${slug}` : 'Configure project metadata & architecture'}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {slug && (
               <a
                 href={`/work/${slug}?preview=true`}
@@ -357,7 +526,8 @@ export function ProjectModal({
             )}
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+              aria-label="Close modal"
             >
               <X className="w-5 h-5" />
             </button>
@@ -365,29 +535,25 @@ export function ProjectModal({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-1 px-6 py-2 border-b border-border bg-surface-elevated/30 overflow-x-auto text-xs font-mono">
-          {[
-            { id: 'basic', label: '1. Basic Info', icon: Sliders },
-            { id: 'media', label: '2. Media & Visuals', icon: ImageIcon },
-            { id: 'tech', label: '3. Technologies', icon: Layers },
-            { id: 'features', label: '4. Highlights & KPIs', icon: CheckCircle2 },
-            { id: 'architecture', label: '5. Architecture Topology', icon: Cpu },
-            { id: 'case_study', label: '6. Case Study', icon: BookOpen },
-            { id: 'seo', label: '7. Links & SEO', icon: Link2 },
-          ].map((tab) => {
+        <div
+          data-lenis-prevent
+          className="flex items-center gap-1 px-3 sm:px-6 py-2 border-b border-border bg-surface-elevated/30 overflow-x-auto text-xs font-mono overscroll-contain touch-pan-x shrink-0 mobile-scroll-x"
+        >
+          {MODAL_TABS.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={`px-3 py-2 rounded-lg flex items-center gap-2 whitespace-nowrap transition-all ${
+                className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all shrink-0 cursor-pointer text-xs ${
                   activeTab === tab.id
                     ? 'bg-primary/20 text-primary font-bold border border-border-accent'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{tab.label}</span>
+                <Icon className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.shortLabel}</span>
               </button>
             );
           })}
@@ -395,13 +561,17 @@ export function ProjectModal({
 
         {/* Error notice */}
         {error && (
-          <div className="mx-6 mt-4 p-3 rounded-xl bg-destructive/15 border border-destructive/30 text-destructive text-xs font-mono">
+          <div className="mx-4 sm:mx-6 mt-3 sm:mt-4 p-3 rounded-xl bg-destructive/15 border border-destructive/30 text-destructive text-xs font-mono shrink-0">
             {error}
           </div>
         )}
 
-        {/* Scrollable Form Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div
+          data-lenis-prevent
+          className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 overscroll-contain touch-pan-y"
+          onWheel={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+        >
           {/* TAB 1: BASIC INFO */}
           {activeTab === 'basic' && (
             <div className="space-y-4">
@@ -506,6 +676,36 @@ export function ProjectModal({
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-mono text-muted-foreground">System / Architecture Type</label>
+                  <input
+                    type="text"
+                    value={type}
+                    onChange={(e) => setType(e.target.value)}
+                    placeholder="e.g. Multi-Vendor Marketplace (5 Portals)"
+                    className="w-full px-3 py-2 rounded-xl bg-surface border border-border text-foreground text-xs font-mono focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-mono text-muted-foreground">Vendor / Architecture Model</label>
+                  <select
+                    value={vendorModel}
+                    onChange={(e) => setVendorModel(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-surface border border-border text-foreground text-xs font-mono focus:outline-none focus:border-primary"
+                  >
+                    <option value="">None / Custom</option>
+                    <option value="Multi-Vendor Marketplace">Multi-Vendor Marketplace (Client + Seller + Admin)</option>
+                    <option value="Single-Vendor Direct">Single-Vendor Direct (Client + Admin)</option>
+                    <option value="Quick-Commerce Hub">Quick-Commerce Hub (Dark Store + Delivery)</option>
+                    <option value="On-Demand Service">On-Demand Food / Service Portal</option>
+                    <option value="Social Network">Social Network / Community</option>
+                    <option value="SaaS Platform">SaaS Platform</option>
+                  </select>
+                </div>
+              </div>
+
               <div className="p-4 rounded-2xl bg-surface-elevated/40 border border-border flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-6">
                   <label className="flex items-center gap-2 cursor-pointer text-xs font-mono">
@@ -545,60 +745,151 @@ export function ProjectModal({
 
           {/* TAB 2: MEDIA & VISUALS */}
           {activeTab === 'media' && (
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-mono text-muted-foreground">Primary Thumbnail Image URL</label>
+            <div className="space-y-6">
+              {/* Dynamic Cloudinary Target Folder Notice */}
+              <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2">
+                  <Folder className="w-4 h-4 text-purple-400 shrink-0" />
+                  <span className="text-xs font-mono text-foreground">
+                    Target Cloudinary Folder:{' '}
+                    <code className="px-2 py-0.5 rounded-md bg-black/40 text-purple-300 font-bold border border-purple-500/20">
+                      portfolio/projects/{(slug || name || 'general').toLowerCase().replace(/[^a-z0-9_-]/g, '-')}
+                    </code>
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 self-start sm:self-auto text-[11px] font-mono text-emerald-400 font-medium">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Realtime Cloudinary Sync</span>
+                </div>
+              </div>
+
+              {/* Status Banner Message */}
+              {mediaMessage && (
+                <div
+                  className={`p-3 rounded-xl text-xs font-mono flex items-center justify-between border ${
+                    mediaMessage.type === 'success'
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                      : 'bg-destructive/10 border-destructive/30 text-destructive'
+                  }`}
+                >
+                  <span>{mediaMessage.text}</span>
+                  <button
+                    type="button"
+                    onClick={() => setMediaMessage(null)}
+                    className="text-xs hover:opacity-75 font-bold px-1"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* Multi-Image Cloudinary Upload Dropzone */}
+              <div className="relative border-2 border-dashed border-border hover:border-purple-500/60 rounded-2xl p-6 bg-surface/40 hover:bg-surface/60 transition-colors flex flex-col items-center justify-center text-center group">
                 <input
-                  type="text"
-                  value={image}
-                  onChange={(e) => setImage(e.target.value)}
-                  placeholder="https://images.unsplash.com/photo-... or /projects/thumb.png"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground text-xs font-mono focus:outline-none focus:border-primary"
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  disabled={uploadingImages}
+                  onChange={handleMultiFileUpload}
+                  className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed z-10"
                 />
-                {image && (
-                  <div className="mt-2 aspect-video max-w-sm rounded-xl overflow-hidden border border-border bg-black/40">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={image} alt="Thumbnail preview" className="w-full h-full object-cover" />
+                {uploadingImages ? (
+                  <div className="flex flex-col items-center gap-2 py-2">
+                    <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+                    <span className="text-xs font-mono font-bold text-foreground">
+                      {uploadProgress || 'Uploading images to Cloudinary...'}
+                    </span>
+                    <span className="text-[11px] font-mono text-muted-foreground">
+                      Optimizing images and updating dynamic project folder
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2.5 py-2">
+                    <div className="w-12 h-12 rounded-full bg-purple-500/10 border border-purple-500/25 flex items-center justify-center text-purple-400 group-hover:scale-110 group-hover:bg-purple-500/20 transition-all">
+                      <UploadCloud className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-xs font-mono font-bold text-foreground">
+                        Click or drag &amp; drop multiple project screenshots
+                      </span>
+                      <p className="text-[11px] font-mono text-muted-foreground">
+                        Files are directly uploaded to Cloudinary folder:{' '}
+                        <span className="text-purple-400 font-semibold">
+                          portfolio/projects/{(slug || name || 'general').toLowerCase().replace(/[^a-z0-9_-]/g, '-')}
+                        </span>
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-mono text-muted-foreground">Hero / Header Image URL (Optional)</label>
-                <input
-                  type="text"
-                  value={heroImage}
-                  onChange={(e) => setHeroImage(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground text-xs font-mono focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-mono text-muted-foreground">Video Demo / Stream URL (Optional)</label>
-                <input
-                  type="text"
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  placeholder="https://youtube.com/watch?v=... or .mp4 link"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground text-xs font-mono focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              {/* Gallery Screenshots */}
-              <div className="space-y-3 pt-4 border-t border-border">
+              {/* Primary Thumbnail Preview & Field */}
+              <div className="space-y-2 p-4 rounded-2xl bg-surface/40 border border-border">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono text-foreground font-bold uppercase">
-                    Gallery Screenshots ({gallery.length})
-                  </span>
+                  <label className="text-xs font-mono font-bold text-foreground flex items-center gap-1.5">
+                    <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                    <span>Primary Project Card Thumbnail</span>
+                  </label>
+                  {image && (
+                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
+                      Active Thumbnail
+                    </span>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  value={image}
+                  onChange={(e) => setImage(e.target.value)}
+                  placeholder="https://res.cloudinary.com/... or click 'Set as Primary' on any gallery image"
+                  className="w-full px-3.5 py-2 rounded-xl bg-surface border border-border text-foreground text-xs font-mono focus:outline-none focus:border-primary"
+                />
+                {image && (
+                  <div className="aspect-video max-w-xs rounded-xl overflow-hidden border border-border bg-black/40 relative group/thumb">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={image} alt="Thumbnail preview" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setImage('')}
+                      className="absolute top-1.5 right-1.5 p-1 rounded-md bg-black/70 text-destructive opacity-0 group-hover/thumb:opacity-100 transition-opacity"
+                      title="Clear Primary Thumbnail"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Gallery Screenshots Showcase with Multi-image Slider Support */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono text-foreground font-bold uppercase tracking-wider">
+                      Project Screenshots Gallery
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] font-mono font-bold">
+                      {gallery.length} {gallery.length === 1 ? 'image' : 'images'}
+                    </span>
+                  </div>
+
+                  {gallery.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleDeleteAllImages}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-mono font-medium transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete All ({gallery.length})</span>
+                    </button>
+                  )}
                 </div>
 
+                {/* Manual Add URL */}
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
                     value={newGalleryUrl}
                     onChange={(e) => setNewGalleryUrl(e.target.value)}
-                    placeholder="Enter image URL..."
+                    placeholder="Or paste external screenshot URL..."
                     className="flex-1 px-3.5 py-2 rounded-xl bg-surface border border-border text-foreground text-xs font-mono focus:outline-none focus:border-primary"
                   />
                   <button
@@ -606,25 +897,103 @@ export function ProjectModal({
                     onClick={handleAddGalleryImage}
                     className="px-4 py-2 rounded-xl bg-primary/20 text-primary border border-border-accent text-xs font-mono font-bold hover:bg-primary/30 transition-colors"
                   >
-                    + Add Image
+                    + Add URL
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                  {gallery.map((imgUrl, idx) => (
-                    <div key={idx} className="relative group rounded-xl overflow-hidden border border-border aspect-video bg-black/40">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={imgUrl} alt={`Screenshot ${idx + 1}`} className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveGalleryImage(idx)}
-                        className="absolute top-1.5 right-1.5 p-1 rounded-md bg-black/70 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Remove"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
+                {/* Screenshots Grid */}
+                {gallery.length === 0 ? (
+                  <div className="p-6 rounded-2xl border border-dashed border-border bg-surface/20 text-center space-y-1">
+                    <p className="text-xs font-mono text-muted-foreground">
+                      No gallery images uploaded yet for this project.
+                    </p>
+                    <p className="text-[11px] font-mono text-muted-foreground/80">
+                      Upload multiple images above to enable the interactive project card slider!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+                    {gallery.map((imgUrl, idx) => {
+                      const isPrimary = imgUrl === image;
+                      return (
+                        <div
+                          key={idx}
+                          className={`relative group rounded-xl overflow-hidden border aspect-video bg-black/40 transition-all ${
+                            isPrimary
+                              ? 'border-amber-400 ring-2 ring-amber-400/30 shadow-lg shadow-amber-400/10'
+                              : 'border-border hover:border-purple-500/50'
+                          }`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={imgUrl}
+                            alt={`Project screenshot ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+
+                          {/* Primary Badge */}
+                          {isPrimary && (
+                            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-amber-500/90 text-black text-[10px] font-mono font-bold flex items-center gap-1 shadow-md">
+                              <Star className="w-3 h-3 fill-black" />
+                              <span>Primary</span>
+                            </div>
+                          )}
+
+                          {/* Hover Actions Bar */}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
+                            {!isPrimary && (
+                              <button
+                                type="button"
+                                onClick={() => handleSetAsPrimary(imgUrl)}
+                                className="px-2.5 py-1.5 rounded-lg bg-amber-500/90 hover:bg-amber-400 text-black text-[11px] font-mono font-bold flex items-center gap-1 transition-all shadow-md"
+                              >
+                                <Star className="w-3 h-3 fill-black" />
+                                <span>Set Primary</span>
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSingleImage(idx)}
+                              className="p-1.5 rounded-lg bg-red-600/90 hover:bg-red-500 text-white text-xs font-mono font-bold transition-all shadow-md"
+                              title="Delete screenshot from Cloudinary & Gallery"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Optional Hero Image and Video URL */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-border">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-mono text-muted-foreground">
+                    Hero / Header Image URL (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={heroImage}
+                    onChange={(e) => setHeroImage(e.target.value)}
+                    placeholder="https://..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground text-xs font-mono focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-mono text-muted-foreground">
+                    Video Demo / Stream URL (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    placeholder="https://youtube.com/watch?v=... or .mp4"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground text-xs font-mono focus:outline-none focus:border-primary"
+                  />
                 </div>
               </div>
             </div>
@@ -697,7 +1066,12 @@ export function ProjectModal({
                 <span className="text-xs font-mono text-foreground font-bold uppercase">
                   Select from Skills Catalog:
                 </span>
-                <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto p-2 rounded-xl bg-surface border border-border">
+                <div
+                  data-lenis-prevent
+                  className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto p-2 rounded-xl bg-surface border border-border overscroll-contain touch-pan-y"
+                  onWheel={(e) => e.stopPropagation()}
+                  onTouchMove={(e) => e.stopPropagation()}
+                >
                   {skillsList.map((skill) => {
                     const isSelected = selectedTech.includes(skill.name);
                     return (
@@ -1023,27 +1397,37 @@ export function ProjectModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 border-t border-border bg-surface/80 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-mono text-muted-foreground">Status:</span>
-            <span
-              className={`px-2.5 py-1 rounded-md text-xs font-mono uppercase font-bold ${
-                status === 'published'
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                  : status === 'draft'
-                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                  : 'bg-muted text-muted-foreground border border-border'
-              }`}
-            >
-              {status}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border bg-surface/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-muted-foreground">Status:</span>
+              <span
+                className={`px-2.5 py-1 rounded-md text-xs font-mono uppercase font-bold ${
+                  status === 'published'
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : status === 'draft'
+                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                    : 'bg-muted text-muted-foreground border border-border'
+                }`}
+              >
+                {status}
+              </span>
+            </div>
+            {/* Mobile cancel button */}
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-border text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="sm:hidden px-3 py-1.5 rounded-lg border border-border text-xs font-mono text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={onClose}
+              className="hidden sm:inline-flex px-4 py-2 rounded-xl border border-border text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -1052,20 +1436,20 @@ export function ProjectModal({
               type="button"
               disabled={saving}
               onClick={() => handleSubmit('draft')}
-              className="px-4 py-2 rounded-xl bg-surface-elevated hover:bg-muted border border-border text-xs font-mono text-foreground font-semibold flex items-center gap-2 transition-colors disabled:opacity-50"
+              className="flex-1 sm:flex-initial px-3 sm:px-4 py-2.5 sm:py-2 rounded-xl bg-surface-elevated hover:bg-muted border border-border text-xs font-mono text-foreground font-semibold flex items-center justify-center gap-1.5 sm:gap-2 transition-colors disabled:opacity-50 cursor-pointer"
             >
-              <Save className="w-3.5 h-3.5 text-amber-400" />
-              <span>Save as Draft</span>
+              <Save className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Save Draft</span>
             </button>
 
             <button
               type="button"
               disabled={saving}
               onClick={() => handleSubmit('published')}
-              className="px-5 py-2 rounded-xl bg-primary hover:opacity-90 text-primary-foreground text-xs font-mono font-bold flex items-center gap-2 transition-all shadow-md shadow-primary/20 disabled:opacity-50"
+              className="flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 sm:py-2 rounded-xl bg-primary hover:opacity-90 text-primary-foreground text-xs font-mono font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all shadow-md shadow-primary/20 disabled:opacity-50 cursor-pointer"
             >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>{saving ? 'Publishing...' : 'Publish to Live Portfolio'}</span>
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{saving ? 'Publishing...' : 'Publish to Live'}</span>
             </button>
           </div>
         </div>

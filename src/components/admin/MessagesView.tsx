@@ -133,7 +133,10 @@ export function MessagesView({ onCountChange }: MessagesViewProps) {
       {/* Filter Tabs & Search Bar */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 font-mono text-xs">
         {/* Status Filter Pills */}
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-card border border-border overflow-x-auto">
+        <div
+          data-lenis-prevent
+          className="flex items-center gap-1.5 p-1 rounded-2xl bg-card border border-border overflow-x-auto touch-pan-x overscroll-contain"
+        >
           {[
             { id: 'all', label: 'All Inquiries', count: counts.all, icon: Inbox },
             { id: 'unread', label: 'Unread', count: counts.unread, icon: Mail, highlight: counts.unread > 0 },

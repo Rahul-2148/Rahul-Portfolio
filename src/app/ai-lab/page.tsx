@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function AiLabPage() {
   return (
-    <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-20">
+    <div className="pt-1 sm:pt-2 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 sm:space-y-10">
       {/* Header */}
       <div className="max-w-3xl space-y-4">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent border border-border-accent text-accent-foreground text-xs font-mono">
@@ -34,16 +34,21 @@ export default function AiLabPage() {
           Decoupled AI integration ensures zero vendor lock-in and seamless fallback when rate limits or upstream provider outages occur.
         </p>
 
-        <div className="bg-surface p-6 rounded-xl border border-border font-mono text-xs text-foreground space-y-2 overflow-x-auto shadow-xs">
+        <div
+          data-lenis-prevent
+          className="bg-surface p-6 rounded-xl border border-border font-mono text-xs text-foreground space-y-2 overflow-x-auto shadow-xs touch-pan-x overscroll-contain"
+        >
           <div className="text-primary font-bold">Client Application / Storefront</div>
           <div className="text-muted-foreground pl-4">│  (HTTP / WebSocket Stream)</div>
           <div className="text-foreground font-bold pl-4">▼ Application Backend (API Controller)</div>
           <div className="text-muted-foreground pl-8">│  (Context Injection &amp; Rate Limiter)</div>
           <div className="text-emerald-500 font-bold pl-8">▼ AI Orchestrator &amp; Tool Router</div>
           <div className="text-muted-foreground pl-12">│</div>
-          <div className="text-primary pl-12">├── [Gemini Provider] ── Primary High-Speed Reasoning</div>
-          <div className="text-amber-500 pl-12">├── [Claude / OpenAI Provider] ── Automatic Resilient Fallback</div>
-          <div className="text-purple-400 pl-12">└── [Python ML Microservice] ── Relevance &amp; Embeddings</div>
+          <div className="text-primary pl-12">├── [Multi-Modal Foundation Models] ── Context Grounding, Semantic Synthesis &amp; Structured Responses</div>
+          <div className="text-amber-500 pl-12">├── [Reasoning &amp; Agentic Workflows] ── Complex Architectural Analysis &amp; Multi-Step Reasoning</div>
+          <div className="text-blue-400 pl-12">├── [High-Throughput MoE Clusters] ── Fast Algorithmic Inference &amp; Token Optimization</div>
+          <div className="text-rose-500 pl-12">├── [Low-Latency Edge Inference] ── Sub-second Conversational Streaming &amp; Voice Pipelines</div>
+          <div className="text-purple-400 pl-12">└── [Python ML Microservices] ── Vector Embeddings &amp; Collaborative Filtering</div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 text-xs">

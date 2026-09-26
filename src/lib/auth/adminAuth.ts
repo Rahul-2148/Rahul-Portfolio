@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import crypto from 'crypto';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { PortfolioModel } from '@/lib/db/models/Portfolio';
 import { AuditLogModel } from '@/lib/db/models/AuditLog';
@@ -15,7 +16,18 @@ export async function getEffectiveAdminPasscode(): Promise<string> {
   } catch (err) {
     console.error('Error fetching dynamic admin passcode:', err);
   }
-  return process.env.ADMIN_PASSCODE || 'rahul2148';
+  // Strictly environment-only; zero hardcoded fallback credentials
+  return process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.trim() : '';
+}
+
+export function generateAdminSessionToken(passcode: string): string {
+  // Cryptographically secure token derived from passcode + secret salt
+  const secretSalt = process.env.ADMIN_PASSCODE || 'rahul_portfolio_secure_session_salt';
+  const hash = crypto
+    .createHmac('sha256', secretSalt)
+    .update(passcode)
+    .digest('hex');
+  return `auth_v2_${hash}`;
 }
 
 export async function checkAdminAuth(req: NextRequest): Promise<boolean> {
@@ -23,19 +35,17 @@ export async function checkAdminAuth(req: NextRequest): Promise<boolean> {
   const headerToken = req.headers.get('x-admin-passcode');
 
   const passcode = await getEffectiveAdminPasscode();
-  const expectedToken = 'authenticated_' + Buffer.from(passcode).toString('base64');
+  if (!passcode || passcode.length < 4) {
+    // If no passcode is set in environment or database, refuse access safely
+    return false;
+  }
 
-  if (cookieToken === expectedToken) return true;
+  const expectedToken = generateAdminSessionToken(passcode);
+  // Also support backwards-compatible base64 session token during transition
+  const legacyToken = 'authenticated_' + Buffer.from(passcode).toString('base64');
+
+  if (cookieToken === expectedToken || cookieToken === legacyToken) return true;
   if (headerToken === passcode) return true;
-
-  // Fallback to initial env passcode if user passcode was updated
-  const defaultPasscode = process.env.ADMIN_PASSCODE || 'rahul2148';
-  if (cookieToken === 'authenticated_' + Buffer.from(defaultPasscode).toString('base64')) {
-    return true;
-  }
-  if (headerToken === defaultPasscode) {
-    return true;
-  }
 
   return false;
 }

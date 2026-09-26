@@ -577,7 +577,10 @@ export function AnalyticsDashboard() {
         </div>
 
         <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
+          <div
+            data-lenis-prevent
+            className="overflow-x-auto touch-pan-x overscroll-contain"
+          >
             <table className="w-full text-left text-xs font-mono">
               <thead className="bg-surface border-b border-border text-muted-foreground uppercase text-[10px]">
                 <tr>

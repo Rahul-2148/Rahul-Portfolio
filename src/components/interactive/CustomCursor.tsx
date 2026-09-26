@@ -1,38 +1,54 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, useSpring, useMotionValue } from 'framer-motion';
 
 export function CustomCursor() {
   const [visible, setVisible] = useState(false);
   const [cursorText, setCursorText] = useState('');
   const [isHovered, setIsHovered] = useState(false);
+  const [isIdle, setIsIdle] = useState(false);
 
   const mouseX = useMotionValue(-100);
   const mouseY = useMotionValue(-100);
 
-  const springConfig = { damping: 25, stiffness: 350 };
+  const springConfig = { damping: 28, stiffness: 400, mass: 0.1 };
   const cursorX = useSpring(mouseX, springConfig);
   const cursorY = useSpring(mouseY, springConfig);
 
+  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
-    // Only enable on desktop non-touch devices with fine pointer
+    // Only enable on desktop pointer devices without reduced-motion preference
     const isTouch = window.matchMedia('(pointer: coarse)').matches;
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (isTouch || prefersReducedMotion) return;
 
     setVisible(true);
 
+    const resetIdleTimer = () => {
+      setIsIdle(false);
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current);
+      }
+      idleTimerRef.current = setTimeout(() => {
+        setIsIdle(true);
+      }, 1500);
+    };
+
     const handleMouseMove = (e: MouseEvent) => {
       mouseX.set(e.clientX);
       mouseY.set(e.clientY);
+      resetIdleTimer();
     };
 
     const handleMouseOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
-      const interactive = target.closest('[data-cursor], button, a, input, textarea, [role="button"]');
+      const interactive = target.closest(
+        '[data-cursor], button, a, input, textarea, [role="button"]'
+      );
       if (interactive) {
         setIsHovered(true);
         const text = interactive.getAttribute('data-cursor');
@@ -46,6 +62,10 @@ export function CustomCursor() {
     const handleMouseLeave = () => {
       setIsHovered(false);
       setCursorText('');
+      setIsIdle(true);
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current);
+      }
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -56,6 +76,9 @@ export function CustomCursor() {
       window.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseover', handleMouseOver);
       document.removeEventListener('mouseleave', handleMouseLeave);
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current);
+      }
     };
   }, [mouseX, mouseY]);
 
@@ -70,25 +93,33 @@ export function CustomCursor() {
         translateX: '-50%',
         translateY: '-50%',
       }}
+      animate={{
+        opacity: isIdle ? 0 : 1,
+      }}
+      transition={{
+        opacity: { duration: 0.25, ease: 'easeInOut' },
+      }}
     >
       <motion.div
         animate={{
-          scale: isHovered ? (cursorText ? 2.6 : 1.7) : 1,
+          scale: isHovered ? (cursorText ? 2.4 : 1.6) : 1,
           backgroundColor: isHovered
             ? cursorText
               ? 'var(--primary)'
-              : 'rgba(var(--accent-rgb), 0.15)'
+              : 'rgba(var(--accent-rgb), 0.18)'
             : 'rgba(var(--accent-rgb), 0.35)',
           borderColor: isHovered ? 'var(--primary)' : 'rgba(var(--accent-rgb), 0.6)',
         }}
-        transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-        className="flex items-center justify-center rounded-full border border-primary backdrop-blur-xs w-6 h-6 text-[8px] font-mono font-bold tracking-wider text-primary-foreground select-none"
+        transition={{ type: 'spring', damping: 22, stiffness: 350 }}
+        className="flex items-center justify-center rounded-full border border-primary backdrop-blur-xs w-5 h-5 text-[8px] font-mono font-bold tracking-wider text-primary-foreground select-none shadow-sm shadow-primary/30"
       >
         {cursorText && (
-          <span className="scale-75 uppercase tracking-widest">{cursorText}</span>
+          <span className="scale-75 uppercase tracking-widest leading-none">{cursorText}</span>
         )}
       </motion.div>
     </motion.div>
   );
 }
+
 export default CustomCursor;
+

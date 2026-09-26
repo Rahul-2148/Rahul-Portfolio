@@ -10,8 +10,8 @@ export const metadata = {
 
 export default function WorkPage() {
   return (
-    <div className="py-12 space-y-12">
-      <SelectedWork />
+    <div className="pb-10 sm:pb-12 flex flex-col">
+      <SelectedWork isHomePage={false} />
       <ArchitectureVisualizer />
     </div>
   );

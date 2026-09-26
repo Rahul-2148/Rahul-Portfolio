@@ -113,7 +113,10 @@ export function VisitorAuthModal({ isOpen, onClose, onUserUpdate }: VisitorAuthM
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in">
-      <div className="w-full max-w-lg bg-card border border-border rounded-2xl p-6 sm:p-7 space-y-5 shadow-2xl text-foreground card-beam relative">
+      <div
+        data-lenis-prevent
+        className="w-full max-w-lg bg-card border border-border rounded-2xl p-6 sm:p-7 space-y-5 shadow-2xl text-foreground card-beam relative max-h-[90vh] overflow-y-auto overscroll-contain touch-pan-y"
+      >
         <button
           onClick={onClose}
           className="absolute top-5 right-5 p-1.5 rounded-lg text-muted-foreground hover:text-foreground bg-surface hover:bg-surface-elevated transition-colors cursor-pointer"
@@ -206,7 +209,7 @@ export function VisitorAuthModal({ isOpen, onClose, onUserUpdate }: VisitorAuthM
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Alex Morgan"
+                  placeholder="Your Name (e.g. Engineering Lead)"
                   className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground font-mono placeholder:text-muted-foreground focus:outline-none focus:border-border-accent"
                 />
               </div>
@@ -221,7 +224,7 @@ export function VisitorAuthModal({ isOpen, onClose, onUserUpdate }: VisitorAuthM
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="alex@company.com"
+                  placeholder="you@company.com"
                   className="w-full px-3 py-2 rounded-xl bg-surface border border-input text-foreground font-mono placeholder:text-muted-foreground focus:outline-none focus:border-border-accent"
                 />
               </div>

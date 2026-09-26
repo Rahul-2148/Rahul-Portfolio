@@ -1,110 +1,66 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Palette, Check } from 'lucide-react';
-import { themes, ThemeId, getStoredTheme, setTheme } from '@/lib/theme';
+import React, { useState, useEffect } from 'react';
+import { Sun, Moon } from 'lucide-react';
+import { ThemeMode, getStoredTheme, toggleTheme } from '@/lib/theme';
 
 export function ThemeToggle() {
-  const [currentTheme, setCurrentTheme] = useState<ThemeId>('cyber-cyan');
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [theme, setLocalTheme] = useState<ThemeMode>('dark');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const saved = getStoredTheme();
-    setCurrentTheme(saved);
-    document.documentElement.setAttribute('data-theme', saved);
+    setMounted(true);
+    const initial = getStoredTheme();
+    setLocalTheme(initial);
 
     const handleThemeChange = (e: Event) => {
-      const detail = (e as CustomEvent<ThemeId>).detail;
-      if (detail) {
-        setCurrentTheme(detail);
+      const detail = (e as CustomEvent<ThemeMode>).detail;
+      if (detail === 'dark' || detail === 'light') {
+        setLocalTheme(detail);
       }
     };
 
     window.addEventListener('theme-changed', handleThemeChange);
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-
-    return () => {
-      window.removeEventListener('theme-changed', handleThemeChange);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => window.removeEventListener('theme-changed', handleThemeChange);
   }, []);
 
-  const handleSelectTheme = (themeId: ThemeId) => {
-    setTheme(themeId);
-    setCurrentTheme(themeId);
-    setIsOpen(false);
+  const handleToggle = () => {
+    const next = toggleTheme();
+    setLocalTheme(next);
   };
 
-  const activeConfig = themes.find((t) => t.id === currentTheme) || themes[0];
+  const isLight = theme === 'light';
 
   return (
-    <div className="relative" ref={containerRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface hover:bg-surface-elevated border border-border text-xs font-mono text-foreground transition-all"
-        title="Switch Color Theme"
-        data-cursor="THEME"
-      >
-        <span
-          className="w-2.5 h-2.5 rounded-full shadow-sm"
-          style={{ backgroundColor: activeConfig.primaryColor }}
+    <button
+      onClick={handleToggle}
+      suppressHydrationWarning
+      className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-surface hover:bg-surface-elevated border border-border text-foreground transition-all duration-200 hover:border-border-accent shadow-xs active:scale-95 group"
+      title={`Switch to ${isLight ? 'Dark' : 'Light'} Mode`}
+      aria-label={`Switch to ${isLight ? 'Dark' : 'Light'} Mode`}
+      data-cursor="THEME"
+    >
+      <div className="relative w-4 h-4">
+        <Sun
+          className={`w-4 h-4 absolute inset-0 text-amber-500 transition-all duration-300 transform ${
+            isLight
+              ? 'opacity-100 rotate-0 scale-100'
+              : 'opacity-0 -rotate-90 scale-50 pointer-events-none'
+          }`}
         />
-        <Palette className="w-3.5 h-3.5 text-muted-foreground" />
-      </button>
-
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-popover text-popover-foreground border border-border shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150 font-mono text-xs">
-          <div className="flex items-center justify-between px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border mb-1">
-            <span>Aesthetic Design Themes</span>
-            <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface border border-border">6 Presets</span>
-          </div>
-
-          <div className="space-y-1">
-            {themes.map((theme) => {
-              const isSelected = theme.id === currentTheme;
-              return (
-                <button
-                  key={theme.id}
-                  onClick={() => handleSelectTheme(theme.id)}
-                  className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-all ${
-                    isSelected
-                      ? 'bg-accent text-accent-foreground font-semibold'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span
-                      className="w-3.5 h-3.5 rounded-full shrink-0 shadow-xs border border-white/20"
-                      style={{ backgroundColor: theme.primaryColor }}
-                    />
-                    <div className="flex flex-col min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs truncate">{theme.name}</span>
-                        <span className="text-[9px] px-1 py-0.2 rounded bg-surface border border-border text-muted-foreground">
-                          {theme.motif}
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-muted-foreground/80 truncate">
-                        {theme.motifDescription}
-                      </span>
-                    </div>
-                  </div>
-                  {isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0 ml-1" />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
+        <Moon
+          className={`w-4 h-4 absolute inset-0 text-primary transition-all duration-300 transform ${
+            !isLight
+              ? 'opacity-100 rotate-0 scale-100'
+              : 'opacity-0 rotate-90 scale-50 pointer-events-none'
+          }`}
+        />
+      </div>
+      <span className="sr-only">
+        {mounted ? `Current theme: ${theme}. Click to switch.` : 'Toggle theme'}
+      </span>
+    </button>
   );
 }
+
 export default ThemeToggle;

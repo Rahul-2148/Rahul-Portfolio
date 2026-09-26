@@ -1,0 +1,2249 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Rahul Raj — Portfolio & Systems Architecture API",
+    "version": "1.0.0",
+    "description": "Production-grade RESTful API documentation for Rahul Raj's modern portfolio platform, built with **Next.js 16**, **TypeScript**, **MongoDB Atlas**, **Cloudinary**, and **AI LLM Orchestration**.\n\n### Key Architectural Pillars\n- **Public Gateway**: Ultra-fast endpoints for portfolio contents, live ATS resume downloads, real-time presence heartbeats, and AI assistant interaction.\n- **Admin Control Studio & Hardware Biometrics**: Role-Based Access Control (RBAC) secured via WebAuthn/FIDO2 hardware biometric passkeys (Fingerprint, TouchID, Windows Hello, FaceID), 4-digit security PIN, master passcode, cryptographic HMAC tokens, or Email OTP resets.\n- **Resilience Engine**: Zero-crash persistence architecture backed by MongoDB Atlas with in-memory caching and real-time health telemetry probes.\n- **Security & Anti-Abuse**: IP-based sliding window rate limiters, anti-bot honeypot traps, and encrypted session cookies.",
+    "contact": {
+      "name": "Rahul Raj Modi",
+      "email": "rahulraj21480@gmail.com",
+      "url": "https://github.com/Rahul-2148"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Current Environment / Origin Server"
+    },
+    {
+      "url": "http://localhost:3000",
+      "description": "Local Development Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Portfolio",
+      "description": "Public endpoints for retrieving profile data, projects, and active resumes"
+    },
+    {
+      "name": "Visitor & Recruiter Pass",
+      "description": "Recruiter check-in, identity verification, and interactive pass issuance"
+    },
+    {
+      "name": "Contact & Inquiries",
+      "description": "Visitor inquiries, recruiter submissions, and Nodemailer email dispatch"
+    },
+    {
+      "name": "AI Assistant",
+      "description": "Executive AI assistant powered by cascading multi-provider LLMs (Gemini, Groq, OpenAI, Local)"
+    },
+    {
+      "name": "Analytics & Telemetry",
+      "description": "Anonymous event tracking, user journeys, and live presence pulse"
+    },
+    {
+      "name": "System Health",
+      "description": "Uptime monitoring, database latency probes, and service diagnostics"
+    },
+    {
+      "name": "Admin Authentication",
+      "description": "Owner authentication, hardware biometric passkeys (WebAuthn/FIDO2 Fingerprint, TouchID, Windows Hello), 4-digit PIN, session cookies, and Email OTP recovery"
+    },
+    {
+      "name": "Admin Projects",
+      "description": "Full CRUD operations, tiering, status management, and sort reordering for projects"
+    },
+    {
+      "name": "Admin CMS Content",
+      "description": "Management of technical skills, academic credentials, achievements, and resumes"
+    },
+    {
+      "name": "Admin Settings & Media",
+      "description": "Global profile settings, avatar management, and Cloudinary media pipeline"
+    },
+    {
+      "name": "Admin Telemetry & Inquiries",
+      "description": "Recruiter message inbox, security audit trail, and aggregated analytics"
+    }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "System Health"
+        ],
+        "summary": "System health check and diagnostic probes",
+        "description": "Returns real-time service health, MongoDB Atlas connection latency, memory usage, uptime, and active visitor counts.",
+        "responses": {
+          "200": {
+            "description": "Health status response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthCheckResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/portfolio": {
+      "get": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Fetch public portfolio data",
+        "description": "Retrieves complete profile data including personal info, published projects, experiences, educations, verified skills, and achievements.",
+        "responses": {
+          "200": {
+            "description": "Portfolio data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioData"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/resumes": {
+      "get": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Fetch active downloadable resumes",
+        "description": "Returns list of published resumes with direct PDF URLs, file sizes, ATS scores, and target roles.",
+        "responses": {
+          "200": {
+            "description": "List of published resumes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "resumes": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ResumeItem"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contact": {
+      "post": {
+        "tags": [
+          "Contact & Inquiries"
+        ],
+        "summary": "Submit recruiter / visitor contact form inquiry",
+        "description": "Validates contact payload with Zod, checks sliding window IP rate limit, executes honeypot spam detection, persists message in MongoDB, and triggers non-blocking Nodemailer notification.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactSubmissionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message successfully received and queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Thank you! Your message has been securely recorded and dispatched."
+                    },
+                    "messageId": {
+                      "type": "string",
+                      "example": "65f1234567890abcdef12345"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (Maximum 5 requests per 15 minutes)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Too many submissions. Please wait 450 seconds before trying again."
+                    },
+                    "resetInSeconds": {
+                      "type": "number",
+                      "example": 450
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chat": {
+      "post": {
+        "tags": [
+          "AI Assistant"
+        ],
+        "summary": "Send prompt to Executive AI Assistant",
+        "description": "Interactive conversation engine with cascading model fallback (Google Gemini 2.5 Flash -> Groq Llama 3.3 70B -> OpenAI -> Local Grounded Engine). Includes strict zero-leak privacy protection.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "message"
+                ],
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Walk me through the 5 micro-frontends of Zosh Bazaar"
+                  },
+                  "history": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "assistant"
+                          ]
+                        },
+                        "content": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Assistant response generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "content": {
+                      "type": "string",
+                      "example": "### 🏗️ Zosh Bazaar — 5 Decoupled Micro-Frontends..."
+                    },
+                    "provider": {
+                      "type": "string",
+                      "example": "Executive AI Engine"
+                    },
+                    "model": {
+                      "type": "string",
+                      "example": "Verified Portfolio Context"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analytics/track": {
+      "post": {
+        "tags": [
+          "Analytics & Telemetry"
+        ],
+        "summary": "Track pageview or visitor interaction event",
+        "description": "Records privacy-preserving analytics events (pageview, project click, CV download, social link click) with device and geolocation metadata.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "eventType"
+                ],
+                "properties": {
+                  "eventType": {
+                    "type": "string",
+                    "example": "page_view"
+                  },
+                  "path": {
+                    "type": "string",
+                    "example": "/work/zosh-bazaar"
+                  },
+                  "referrer": {
+                    "type": "string",
+                    "example": "https://github.com"
+                  },
+                  "metadata": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Event tracked successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analytics/presence": {
+      "post": {
+        "tags": [
+          "Analytics & Telemetry"
+        ],
+        "summary": "Send presence heartbeat for live visitor counter",
+        "description": "Updates active session timestamp in MongoDB with 45-second sliding presence window.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sessionId": {
+                    "type": "string",
+                    "example": "sess_123abc"
+                  },
+                  "path": {
+                    "type": "string",
+                    "example": "/"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Presence pulse registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "activeVisitors": {
+                      "type": "number",
+                      "example": 3
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/auth": {
+      "post": {
+        "tags": [
+          "Admin Authentication"
+        ],
+        "summary": "Authenticate via biometric passkey, 4-digit PIN, or master passcode",
+        "description": "Multi-tier authentication endpoint supporting hardware biometric passkeys (WebAuthn / FIDO2 Fingerprint, TouchID, Windows Hello), 4-digit security PIN, master passcode, setting HTTP-only HMAC session cookies, requesting 6-digit Email OTP, resetting passcode via OTP, or logging out.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "login",
+                      "logout",
+                      "change_passcode",
+                      "send_email_otp",
+                      "verify_email_otp"
+                    ],
+                    "default": "login"
+                  },
+                  "passcode": {
+                    "type": "string",
+                    "description": "Master passcode for login"
+                  },
+                  "currentPasscode": {
+                    "type": "string",
+                    "description": "Used during change_passcode"
+                  },
+                  "newPasscode": {
+                    "type": "string",
+                    "description": "Used during change_passcode or verify_email_otp"
+                  },
+                  "otp": {
+                    "type": "string",
+                    "description": "6-digit verification code"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication action successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Authentication successful. Welcome to Admin Studio."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials or expired OTP"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin Authentication"
+        ],
+        "summary": "Check admin authentication status",
+        "description": "Inspects active session cookie or header passcode and returns authentication state.",
+        "responses": {
+          "200": {
+            "description": "Authentication state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "authenticated": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "adminEmail": {
+                      "type": "string",
+                      "example": "rahulraj21480@gmail.com"
+                    },
+                    "hasCustomPasscode": {
+                      "type": "boolean",
+                      "example": false
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/projects": {
+      "get": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "summary": "List all portfolio projects (Admin)",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "published",
+                "draft",
+                "archived"
+              ]
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of projects with counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "projects": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Project"
+                      }
+                    },
+                    "counts": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number",
+                          "example": 6
+                        },
+                        "published": {
+                          "type": "number",
+                          "example": 5
+                        },
+                        "draft": {
+                          "type": "number",
+                          "example": 1
+                        },
+                        "archived": {
+                          "type": "number",
+                          "example": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "summary": "Create a new project",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Project created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Project created successfully."
+                    },
+                    "project": {
+                      "$ref": "#/components/schemas/Project"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/admin/projects/{id}": {
+      "put": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "summary": "Update an existing project",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Project ID or slug"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Project updated"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Project not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "summary": "Delete a project",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Project ID or slug"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project deleted"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/admin/projects/reorder": {
+      "post": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "summary": "Reorder project display priority",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "orderedIds"
+                ],
+                "properties": {
+                  "orderedIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "65f111...",
+                      "65f222...",
+                      "65f333..."
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sort orders updated successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/admin/skills": {
+      "get": {
+        "tags": [
+          "Admin CMS Content"
+        ],
+        "summary": "List technical and operational skills",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of skills",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "skills": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Skill"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin CMS Content"
+        ],
+        "summary": "Create or update skill items",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Skill saved"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/admin/educations": {
+      "get": {
+        "tags": [
+          "Admin CMS Content"
+        ],
+        "summary": "Get all education credentials",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of education entries"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin CMS Content"
+        ],
+        "summary": "Add or update education credentials",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Education entry saved"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/admin/achievements": {
+      "get": {
+        "tags": [
+          "Admin CMS Content"
+        ],
+        "summary": "List achievements and certifications",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of achievements"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin CMS Content"
+        ],
+        "summary": "Create or modify achievements",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Achievement saved"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/admin/resumes": {
+      "get": {
+        "tags": [
+          "Admin CMS Content"
+        ],
+        "summary": "List resumes with active switch status",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of resumes"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin CMS Content"
+        ],
+        "summary": "Add or set active primary resume",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resume updated"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/admin/settings": {
+      "get": {
+        "tags": [
+          "Admin Settings & Media"
+        ],
+        "summary": "Fetch portfolio personal info and settings",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settings retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "personalInfo": {
+                      "$ref": "#/components/schemas/PersonalInfo"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin Settings & Media"
+        ],
+        "summary": "Save portfolio personal info, avatar DP, and bio",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonalInfo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Settings updated"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/admin/cloudinary/upload": {
+      "post": {
+        "tags": [
+          "Admin Settings & Media"
+        ],
+        "summary": "Upload media to Cloudinary CDN",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "description": "Uploads images (DP, project mockups, galleries) or PDF resumes directly to Cloudinary storage.",
+        "responses": {
+          "200": {
+            "description": "Upload successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "url": {
+                      "type": "string",
+                      "example": "https://res.cloudinary.com/demo/image/upload/v1234/rahul.jpg"
+                    },
+                    "publicId": {
+                      "type": "string",
+                      "example": "portfolio/rahul_avatar_123"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/admin/cloudinary/status": {
+      "get": {
+        "tags": [
+          "Admin Settings & Media"
+        ],
+        "summary": "Get Cloudinary CDN connection status",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cloudinary configuration status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "configured": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "cloudName": {
+                      "type": "string",
+                      "example": "rahul-cloud"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/messages": {
+      "get": {
+        "tags": [
+          "Admin Telemetry & Inquiries"
+        ],
+        "summary": "Get contact messages inbox",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of received contact messages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ContactMessage"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/admin/messages/{id}": {
+      "put": {
+        "tags": [
+          "Admin Telemetry & Inquiries"
+        ],
+        "summary": "Update message status (read / unread / archived)",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message status updated"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin Telemetry & Inquiries"
+        ],
+        "summary": "Delete contact message",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message deleted"
+          }
+        }
+      }
+    },
+    "/api/admin/analytics": {
+      "get": {
+        "tags": [
+          "Admin Telemetry & Inquiries"
+        ],
+        "summary": "Get aggregated visitor analytics",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Visitor statistics, device breakdown, top visited pages"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/admin/analytics/realtime": {
+      "get": {
+        "tags": [
+          "Admin Telemetry & Inquiries"
+        ],
+        "summary": "Get live visitor telemetry & active session pulse",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Real-time presence session list"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/admin/audit-logs": {
+      "get": {
+        "tags": [
+          "Admin Telemetry & Inquiries"
+        ],
+        "summary": "View security audit logs",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chronological audit trail of admin actions"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/visitor/auth": {
+      "post": {
+        "tags": [
+          "Visitor & Recruiter Pass"
+        ],
+        "summary": "Issue Recruiter or Visitor Pass",
+        "description": "Verifies and records recruiter/visitor credentials, associates them with the active telemetry session, and upgrades anonymous analytics to a verified recruiter lead.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "email"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "Sarah Connor"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "sarah@techcorp.io"
+                  },
+                  "company": {
+                    "type": "string",
+                    "example": "TechCorp Systems"
+                  },
+                  "role": {
+                    "type": "string",
+                    "example": "Lead Technical Recruiter"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "hiring",
+                      "mentorship",
+                      "collaboration",
+                      "casual"
+                    ],
+                    "example": "hiring"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "example": "Interested in distributed systems background"
+                  },
+                  "visitorId": {
+                    "type": "string",
+                    "example": "vis_1711456789_abc123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Visitor pass successfully generated and session upgraded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "example": "Sarah Connor"
+                        },
+                        "email": {
+                          "type": "string",
+                          "example": "sarah@techcorp.io"
+                        },
+                        "company": {
+                          "type": "string",
+                          "example": "TechCorp Systems"
+                        },
+                        "role": {
+                          "type": "string",
+                          "example": "Lead Technical Recruiter"
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Welcome Sarah Connor! Recruiter Pass generated successfully."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error — missing required fields"
+          },
+          "500": {
+            "description": "Server error processing pass registration"
+          }
+        }
+      }
+    },
+    "/api/admin/cloudinary/delete": {
+      "post": {
+        "tags": [
+          "Admin Settings & Media"
+        ],
+        "summary": "Delete media assets from Cloudinary CDN",
+        "description": "Deletes a single asset or performs bulk deletion of multiple media assets by public ID. Logs administrative audit trail upon success.",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "publicId": {
+                    "type": "string",
+                    "description": "Single asset public ID to delete",
+                    "example": "portfolio/projects/demo_image"
+                  },
+                  "publicIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Bulk array of public IDs to delete"
+                  },
+                  "resourceType": {
+                    "type": "string",
+                    "enum": [
+                      "image",
+                      "raw",
+                      "video"
+                    ],
+                    "default": "image",
+                    "example": "image"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Asset(s) successfully deleted from Cloudinary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Deleted 3 assets."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing publicId or publicIds in request body"
+          },
+          "401": {
+            "description": "Unauthorized — valid admin session or passcode required"
+          },
+          "500": {
+            "description": "Error communicating with Cloudinary API"
+          }
+        }
+      }
+    },
+    "/api/admin/portfolio": {
+      "get": {
+        "tags": [
+          "Admin CMS Content"
+        ],
+        "summary": "Fetch live MongoDB Atlas portfolio dataset with connectivity health",
+        "description": "Retrieves the master portfolio document from MongoDB Atlas or fallback static defaults if the cloud database is offline.",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Portfolio data and database sync status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "isConnected": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "isSynced": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "source": {
+                      "type": "string",
+                      "example": "mongodb_atlas"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Connected to MongoDB Atlas. Live data loaded."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin CMS Content"
+        ],
+        "summary": "Sync or update full portfolio content",
+        "description": "Performs full document saves, section-level updates, or seeds MongoDB Atlas with the codebase default data.",
+        "security": [
+          {
+            "AdminCookieAuth": []
+          },
+          {
+            "AdminPasscodeAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "sync_initial",
+                      "update_section"
+                    ],
+                    "example": "sync_initial"
+                  },
+                  "section": {
+                    "type": "string",
+                    "example": "personalInfo"
+                  },
+                  "data": {
+                    "type": "object",
+                    "description": "Arbitrary section data or complete portfolio payload"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Changes successfully persisted to MongoDB Atlas"
+          },
+          "400": {
+            "description": "Invalid payload or database disconnected"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Database write failure"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AdminCookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "portfolio_admin_token",
+        "description": "Encrypted HTTP-only admin session token generated during login"
+      },
+      "AdminPasscodeAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-admin-passcode",
+        "description": "Secret master passcode configured via ADMIN_PASSCODE environment variable"
+      }
+    },
+    "schemas": {
+      "HealthCheckResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "healthy"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "checkDurationMs": {
+            "type": "number",
+            "example": 12
+          },
+          "services": {
+            "type": "object",
+            "properties": {
+              "api": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "example": "operational"
+                  },
+                  "nodeVersion": {
+                    "type": "string",
+                    "example": "v20.12.2"
+                  },
+                  "uptimeSeconds": {
+                    "type": "number",
+                    "example": 86400
+                  },
+                  "memoryUsageMb": {
+                    "type": "number",
+                    "example": 64.2
+                  }
+                }
+              },
+              "database": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "example": "connected"
+                  },
+                  "provider": {
+                    "type": "string",
+                    "example": "MongoDB Atlas"
+                  },
+                  "latencyMs": {
+                    "type": "number",
+                    "example": 45
+                  },
+                  "readyState": {
+                    "type": "number",
+                    "example": 1
+                  }
+                }
+              },
+              "email": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "example": "operational"
+                  },
+                  "mode": {
+                    "type": "string",
+                    "example": "SMTP Live"
+                  },
+                  "targetRecipient": {
+                    "type": "string",
+                    "example": "rahulraj21480@gmail.com"
+                  }
+                }
+              },
+              "realtime": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "example": "operational"
+                  },
+                  "activeSessions": {
+                    "type": "number",
+                    "example": 3
+                  },
+                  "heartbeatWindowSeconds": {
+                    "type": "number",
+                    "example": 45
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "PortfolioData": {
+        "type": "object",
+        "properties": {
+          "personalInfo": {
+            "$ref": "#/components/schemas/PersonalInfo"
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Project"
+            }
+          },
+          "experiences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Experience"
+            }
+          },
+          "educations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Education"
+            }
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Skill"
+            }
+          },
+          "resumes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResumeItem"
+            }
+          },
+          "achievements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Achievement"
+            }
+          }
+        }
+      },
+      "PersonalInfo": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Rahul Raj Modi"
+          },
+          "role": {
+            "type": "string",
+            "example": "Full-Stack Engineer & Systems Architect"
+          },
+          "tagline": {
+            "type": "string",
+            "example": "Building high-throughput distributed systems & modern web applications"
+          },
+          "bio": {
+            "type": "string",
+            "example": "Full-stack software engineer specializing in Next.js, MERN, micro-frontends, real-time architectures, and AI systems."
+          },
+          "email": {
+            "type": "string",
+            "example": "rahulraj21480@gmail.com"
+          },
+          "github": {
+            "type": "string",
+            "example": "https://github.com/Rahul-2148"
+          },
+          "location": {
+            "type": "string",
+            "example": "India (Open to Global Remote & Relocation)"
+          },
+          "available": {
+            "type": "boolean",
+            "example": true
+          },
+          "resumeUrl": {
+            "type": "string",
+            "example": "/resume"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "example": "/assets/rahul.jpg"
+          }
+        }
+      },
+      "Project": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "65f1234567890abcdef12345"
+          },
+          "slug": {
+            "type": "string",
+            "example": "zosh-bazaar"
+          },
+          "name": {
+            "type": "string",
+            "example": "Zosh Bazaar"
+          },
+          "tagline": {
+            "type": "string",
+            "example": "Enterprise Multi-Vendor E-Commerce Platform"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "example": "Full Stack"
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "S",
+              "A",
+              "B",
+              "C"
+            ],
+            "example": "S"
+          },
+          "type": {
+            "type": "string",
+            "example": "Web Application"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "published",
+              "draft",
+              "archived"
+            ],
+            "example": "published"
+          },
+          "featured": {
+            "type": "boolean",
+            "example": true
+          },
+          "sortOrder": {
+            "type": "number",
+            "example": 0
+          },
+          "technologies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "React",
+              "TypeScript",
+              "Node.js",
+              "Express",
+              "Socket.IO",
+              "MongoDB",
+              "Razorpay"
+            ]
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "5 Independent Micro-Frontends",
+              "Sub-50ms Scoped Socket.IO Rooms",
+              "HMAC-SHA256 Webhook Verification"
+            ]
+          },
+          "links": {
+            "type": "object",
+            "properties": {
+              "live": {
+                "type": "string",
+                "example": "https://zosh-bazaar.vercel.app"
+              },
+              "github": {
+                "type": "string",
+                "example": "https://github.com/Rahul-2148/Zosh-Bazaar-Multivendor-Ecommerce"
+              },
+              "caseStudy": {
+                "type": "string",
+                "example": "/work/zosh-bazaar"
+              }
+            }
+          },
+          "image": {
+            "type": "string",
+            "example": "https://images.unsplash.com/photo-1556742049-0a67c5574f73"
+          },
+          "color": {
+            "type": "string",
+            "example": "#00f0ff"
+          },
+          "year": {
+            "type": "string",
+            "example": "2025"
+          },
+          "role": {
+            "type": "string",
+            "example": "Solo Systems Architect"
+          }
+        }
+      },
+      "ProjectInput": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "New Distributed Platform"
+          },
+          "slug": {
+            "type": "string",
+            "example": "new-distributed-platform"
+          },
+          "tagline": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "example": "Full Stack"
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "S",
+              "A",
+              "B",
+              "C"
+            ],
+            "default": "A"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "published",
+              "draft",
+              "archived"
+            ],
+            "default": "published"
+          },
+          "technologies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "links": {
+            "type": "object"
+          }
+        }
+      },
+      "Skill": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Next.js"
+          },
+          "category": {
+            "type": "string",
+            "example": "Frontend"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "core",
+              "proficient",
+              "familiar"
+            ],
+            "example": "core"
+          },
+          "domain": {
+            "type": "string",
+            "enum": [
+              "IT",
+              "Non-IT"
+            ],
+            "example": "IT"
+          }
+        }
+      },
+      "Experience": {
+        "type": "object",
+        "properties": {
+          "company": {
+            "type": "string",
+            "example": "Independent Systems Engineer"
+          },
+          "role": {
+            "type": "string",
+            "example": "Full-Stack Developer"
+          },
+          "duration": {
+            "type": "string",
+            "example": "2024 — Present"
+          },
+          "description": {
+            "type": "string"
+          },
+          "technologies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "achievements": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Education": {
+        "type": "object",
+        "properties": {
+          "institution": {
+            "type": "string",
+            "example": "National Institute of Technology"
+          },
+          "degree": {
+            "type": "string",
+            "example": "Bachelor of Technology"
+          },
+          "field": {
+            "type": "string",
+            "example": "Computer Science & Engineering"
+          },
+          "duration": {
+            "type": "string",
+            "example": "2021 — 2025"
+          }
+        }
+      },
+      "Achievement": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "AWS Certified Cloud Practitioner"
+          },
+          "issuer": {
+            "type": "string",
+            "example": "Amazon Web Services"
+          },
+          "date": {
+            "type": "string",
+            "example": "2024"
+          },
+          "category": {
+            "type": "string",
+            "example": "certification"
+          }
+        }
+      },
+      "ResumeItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "res_001"
+          },
+          "title": {
+            "type": "string",
+            "example": "Rahul Raj — Full Stack Engineer (2026 ATS)"
+          },
+          "category": {
+            "type": "string",
+            "example": "Full-Stack / Systems"
+          },
+          "url": {
+            "type": "string",
+            "example": "/resumes/Rahul_Raj_Resume.pdf"
+          },
+          "fileSize": {
+            "type": "string",
+            "example": "142 KB"
+          },
+          "isPrimary": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "ContactSubmissionRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "message"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Sarah Connor"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "sarah@techcorp.io"
+          },
+          "subject": {
+            "type": "string",
+            "example": "Senior Full-Stack Role at TechCorp"
+          },
+          "message": {
+            "type": "string",
+            "example": "Hi Rahul, we reviewed your Zosh Bazaar and Snapcart projects and would love to interview you for our core engineering team."
+          },
+          "company": {
+            "type": "string",
+            "example": "TechCorp International"
+          },
+          "projectType": {
+            "type": "string",
+            "example": "Full-Time Role"
+          },
+          "budget": {
+            "type": "string",
+            "example": "$90k - $120k / yr"
+          },
+          "sourceUrl": {
+            "type": "string",
+            "example": "/contact"
+          },
+          "honeypot": {
+            "type": "string",
+            "description": "Anti-bot trap field. Must be left blank by genuine humans."
+          }
+        }
+      },
+      "ContactMessage": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "65f1234567890abcdef12345"
+          },
+          "name": {
+            "type": "string",
+            "example": "Sarah Connor"
+          },
+          "email": {
+            "type": "string",
+            "example": "sarah@techcorp.io"
+          },
+          "subject": {
+            "type": "string",
+            "example": "Senior Full-Stack Role"
+          },
+          "message": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "unread",
+              "read",
+              "replied",
+              "archived"
+            ],
+            "example": "unread"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ValidationErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string",
+            "example": "Validation failed. Please verify the input fields."
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

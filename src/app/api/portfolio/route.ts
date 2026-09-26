@@ -51,6 +51,8 @@ export async function GET() {
         experiences: portfolioDoc?.experiences || defaultExperiences,
         educations: portfolioDoc?.educations || [],
         skills: skillsToServe,
+        resumes: portfolioDoc?.resumes || [],
+        achievements: portfolioDoc?.achievements || [],
       },
     });
   } catch (err) {
@@ -61,7 +63,10 @@ export async function GET() {
         personalInfo: defaultPersonalInfo,
         projects: defaultProjects,
         experiences: defaultExperiences,
+        educations: [],
         skills: defaultSkills,
+        resumes: [],
+        achievements: [],
       },
     });
   }

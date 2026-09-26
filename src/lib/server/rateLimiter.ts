@@ -95,5 +95,6 @@ export function getClientIp(request: Request): string {
  * Anonymize client IP into a one-way SHA-256 hash for privacy-safe storage
  */
 export function hashIp(ip: string): string {
-  return crypto.createHash('sha256').update(ip + (process.env.ADMIN_RECOVERY_KEY || 'salt')).digest('hex').slice(0, 16);
+  const salt = process.env.ADMIN_PASSCODE || 'portfolio_rate_limit_privacy_salt';
+  return crypto.createHash('sha256').update(ip + salt).digest('hex').slice(0, 16);
 }

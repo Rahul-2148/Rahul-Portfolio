@@ -12,9 +12,19 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { GithubIcon } from '@/components/ui/Icons';
+import { TechIcon } from '@/components/ui/TechIcons';
 import { getProjectBySlug } from '@/lib/data/getProject';
 
-export const dynamic = 'force-dynamic';
+import { projects as staticProjects } from '@/lib/data/portfolio';
+
+// Enable ISR revalidation for instant cached case study loads
+export const revalidate = 60;
+
+export async function generateStaticParams() {
+  return staticProjects.map((p) => ({
+    slug: p.slug,
+  }));
+}
 
 export async function generateMetadata({
   params,
@@ -50,7 +60,7 @@ export default async function ProjectCaseStudyPage({
   const isDraft = project.status === 'draft' || project.status === 'archived';
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-16">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-1 sm:pt-2 pb-12 space-y-8 sm:space-y-10">
       {/* Draft / Preview Banner */}
       {isDraft && (
         <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs font-mono text-amber-400">
@@ -91,6 +101,11 @@ export default async function ProjectCaseStudyPage({
           >
             Tier {project.tier} • {project.category}
           </span>
+          {project.vendorModel && (
+            <span className="px-3 py-1 rounded-md text-xs font-mono font-bold bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30">
+              {project.vendorModel}
+            </span>
+          )}
           <span className="text-xs font-mono text-muted-foreground">{project.year}</span>
           <span className="text-xs font-mono text-primary font-semibold">Role: {project.role}</span>
           {project.featured && (
@@ -111,6 +126,45 @@ export default async function ProjectCaseStudyPage({
         <p className="text-base sm:text-lg text-muted-foreground max-w-4xl leading-relaxed">
           {project.description}
         </p>
+
+        {/* Architecture & Vendor Topology Banner */}
+        {(project.vendorModel || (project.portalsList && project.portalsList.length > 0)) && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-surface/70 border border-border/80 space-y-3 max-w-4xl shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2.5">
+              <span className="text-xs font-mono text-foreground font-semibold flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                <span>Architecture &amp; Vendor Model:</span>
+                <span className="text-cyan-600 dark:text-cyan-400 font-bold">
+                  {project.vendorModel || project.type}
+                </span>
+              </span>
+              {project.portalsList && (
+                <span className="text-[11px] font-mono text-muted-foreground">
+                  {project.portalsCount || project.portalsList.length} Connected Portals / Actor Interfaces
+                </span>
+              )}
+            </div>
+
+            {project.portalsList && project.portalsList.length > 0 && (
+              <div className="space-y-1.5 pt-0.5">
+                <span className="text-[10px] font-mono uppercase text-muted-foreground tracking-wider block">
+                  Decoupled System Interfaces &amp; Roles:
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {project.portalsList.map((portal, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-surface-elevated border border-border text-xs font-mono text-foreground/90 font-medium"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                      <span>{portal}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Action Links */}
         <div className="flex flex-wrap items-center gap-4 pt-4">
@@ -181,9 +235,10 @@ export default async function ProjectCaseStudyPage({
           {project.technologies.map((tech) => (
             <span
               key={tech}
-              className="px-3 py-1.5 rounded-lg bg-surface-elevated border border-border text-xs font-mono text-foreground"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-elevated border border-border text-xs font-mono text-foreground font-medium"
             >
-              {tech}
+              <TechIcon name={tech} className="w-4 h-4 shrink-0" />
+              <span>{tech}</span>
             </span>
           ))}
         </div>

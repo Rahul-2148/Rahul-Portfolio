@@ -23,6 +23,9 @@ const ProjectSchema = new Schema<IProjectDoc>(
       index: true,
     },
     type: { type: String, default: 'Web Application' },
+    vendorModel: { type: String, default: '' },
+    portalsCount: { type: Number, default: 0 },
+    portalsList: { type: [String], default: [] },
     status: {
       type: String,
       enum: ['published', 'draft', 'archived'],

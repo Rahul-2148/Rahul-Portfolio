@@ -1,6 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  compress: true,
+  poweredByHeader: false,
+  reactStrictMode: true,
+  serverExternalPackages: ['mongoose', 'nodemailer', 'cloudinary'],
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      'framer-motion',
+      'lenis',
+      'gsap',
+      '@gsap/react',
+      'zod',
+    ],
+  },
   // Production Security Headers
   async headers() {
     return [

@@ -97,7 +97,7 @@ export function LiveVisitorsView() {
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/20 text-primary border border-primary/30 text-[10px] font-mono font-bold">
             <ExternalLink className="w-3 h-3" />
-            <span>Live Demo Launch</span>
+            <span>Try Now Launch</span>
           </span>
         );
       case 'resume_download':
@@ -199,7 +199,10 @@ export function LiveVisitorsView() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div
+                data-lenis-prevent
+                className="overflow-x-auto touch-pan-x overscroll-contain"
+              >
                 <table className="w-full text-left text-xs font-mono">
                   <thead className="bg-surface border-b border-border text-muted-foreground uppercase text-[10px]">
                     <tr>
@@ -253,7 +256,10 @@ export function LiveVisitorsView() {
             <span className="text-xs font-mono text-muted-foreground">Last {recentEvents.length} events</span>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-4 space-y-3 shadow-sm max-h-[520px] overflow-y-auto">
+          <div
+            data-lenis-prevent
+            className="bg-card border border-border rounded-2xl p-4 space-y-3 shadow-sm max-h-[520px] overflow-y-auto overscroll-contain touch-pan-y"
+          >
             {recentEvents.length === 0 ? (
               <div className="p-8 text-center space-y-2 text-muted-foreground text-xs font-mono">
                 <p>No recent activity events recorded yet.</p>

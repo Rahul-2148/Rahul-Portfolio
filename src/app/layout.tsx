@@ -1,29 +1,40 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import '@/styles/globals.css';
 import { Navigation } from '@/components/layout/Navigation';
 import { Footer } from '@/components/layout/Footer';
 import { ClientShell } from '@/components/providers/ClientShell';
+import { LenisProvider } from '@/components/providers/LenisProvider';
 import { VisitorTracker } from '@/components/interactive/VisitorTracker';
 import { personalInfo } from '@/lib/data/portfolio';
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)', color: '#08090d' },
+    { media: '(prefers-color-scheme: light)', color: '#f8f9fc' },
+  ],
+  width: 'device-width',
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
   title: {
-    default: `${personalInfo.name} — ${personalInfo.role}`,
+    default: `${personalInfo.name} — Full-Stack Engineer`,
     template: `%s | ${personalInfo.name}`,
   },
-  description: personalInfo.bio,
+  description: `${personalInfo.name} — Full-Stack Engineer specializing in AI, distributed systems, and real-time event platforms.`,
   keywords: [
     'Rahul Raj',
     'Full-Stack Engineer',
-    'Software Architect',
-    'React',
+    'Distributed Systems',
     'Next.js',
     'TypeScript',
+    'React',
     'Node.js',
-    'MongoDB',
     'Socket.IO',
+    'MongoDB',
+    'Redis',
     'AI Engineer',
-    'Real-time Systems',
   ],
   authors: [{ name: personalInfo.name }],
   creator: personalInfo.name,
@@ -31,13 +42,13 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     siteName: `${personalInfo.name} — Engineering Portfolio`,
-    title: `${personalInfo.name} — ${personalInfo.role}`,
+    title: `${personalInfo.name} — Full-Stack Engineer`,
     description: personalInfo.bio,
     url: 'https://rahul-portfolio.vercel.app',
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${personalInfo.name} — ${personalInfo.role}`,
+    title: `${personalInfo.name} — Full-Stack Engineer`,
     description: personalInfo.bio,
   },
   robots: {
@@ -52,8 +63,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark" data-theme="cyber-cyan" suppressHydrationWarning>
+    <html lang="en" className="dark" data-theme="dark" suppressHydrationWarning>
       <head>
+        <script
+          id="theme-initializer"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('rahul-portfolio-theme');if(!t){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}var d=document.documentElement;d.setAttribute('data-theme',t);if(t==='light'){d.classList.remove('dark');d.classList.add('light');}else{d.classList.remove('light');d.classList.add('dark');}}catch(e){}})();`,
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -64,33 +81,34 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
-        <script
+        <Script
+          id="structured-data"
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'Person',
               name: personalInfo.name,
-              url: 'https://rahul-portfolio.vercel.app',
+              url: process.env.NEXT_PUBLIC_SITE_URL || 'https://rahul-portfolio.vercel.app',
               jobTitle: personalInfo.role,
               description: personalInfo.bio,
               sameAs: [personalInfo.github],
             }),
           }}
         />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('rahul-portfolio-theme')||'cyber-cyan';document.documentElement.setAttribute('data-theme',t);if(t==='studio-light'){document.documentElement.classList.remove('dark');document.documentElement.classList.add('light');}else{document.documentElement.classList.remove('light');document.documentElement.classList.add('dark');}}catch(e){}})();`,
-          }}
-        />
       </head>
-      <body className="bg-background text-foreground antialiased transition-colors duration-300" suppressHydrationWarning>
-        <ClientShell>
-          <VisitorTracker />
-          <Navigation />
-          <main className="min-h-screen pt-20">{children}</main>
-          <Footer />
-        </ClientShell>
+      <body
+        className="bg-background text-foreground antialiased min-h-screen selection:bg-primary/20 selection:text-foreground"
+        suppressHydrationWarning
+      >
+        <LenisProvider>
+          <ClientShell>
+            <VisitorTracker />
+            <Navigation />
+            <main className="min-h-screen pt-16">{children}</main>
+            <Footer />
+          </ClientShell>
+        </LenisProvider>
       </body>
     </html>
   );

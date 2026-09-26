@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Mail, MapPin, CheckCircle2, AlertCircle, Copy, Check, Send, Sparkles } from 'lucide-react';
-import { GithubIcon } from '@/components/ui/Icons';
+import { GithubIcon, LinkedinIcon, InstagramIcon } from '@/components/ui/Icons';
 import { personalInfo } from '@/lib/data/portfolio';
 
 export default function ContactPage() {
@@ -12,7 +12,7 @@ export default function ContactPage() {
     subject: 'New Portfolio Inquiry',
     company: '',
     projectType: 'Full-Stack Architecture',
-    budget: '$5k - $15k',
+    budget: 'Flexible / Open to Discussion',
     message: '',
     website: '', // Invisible honeypot field
   });
@@ -50,7 +50,7 @@ export default function ContactPage() {
           subject: 'New Portfolio Inquiry',
           company: '',
           projectType: 'Full-Stack Architecture',
-          budget: '$5k - $15k',
+          budget: 'Flexible / Open to Discussion',
           message: '',
           website: '',
         });
@@ -65,22 +65,22 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-1 sm:pt-2 pb-12">
       {/* Header */}
-      <div className="max-w-3xl mb-12">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent border border-border-accent text-accent-foreground text-xs font-mono mb-4">
+      <div className="max-w-3xl mb-6 sm:mb-8">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent border border-border-accent text-accent-foreground text-xs font-mono mb-3">
           <Sparkles className="w-3.5 h-3.5 text-primary" />
           <span>Direct Channel</span>
         </div>
-        <h1 className="text-4xl sm:text-5xl font-black text-foreground tracking-tight">
+        <h1 className="text-3xl sm:text-5xl font-black text-foreground tracking-tight">
           Initiate Contact
         </h1>
-        <p className="text-muted-foreground text-base sm:text-lg mt-3 leading-relaxed">
+        <p className="text-muted-foreground text-base sm:text-lg mt-2.5 leading-relaxed">
           Looking for a senior full-stack architect, high-throughput real-time systems builder, or AI product engineer? Send a direct transmission below or reach out via email.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
         {/* Left: Contact Info & Status */}
         <div className="lg:col-span-5 space-y-8">
           <div className="bg-card border border-border rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
@@ -107,8 +107,8 @@ export default function ContactPage() {
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
-                  <GithubIcon className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-lg bg-[#24292F] text-white flex items-center justify-center shrink-0 shadow-xs border border-slate-700">
+                  <GithubIcon className="w-4 h-4 text-white" />
                 </div>
                 <div>
                   <span className="text-xs font-mono uppercase text-muted-foreground block">GitHub Profile</span>
@@ -122,6 +122,42 @@ export default function ContactPage() {
                   </a>
                 </div>
               </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#0A66C2] text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <LinkedinIcon className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <span className="text-xs font-mono uppercase text-muted-foreground block">LinkedIn</span>
+                  <a
+                    href={personalInfo.linkedin}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-foreground hover:text-[#0A66C2] transition-colors font-medium"
+                  >
+                    linkedin.com/in/rahulraj2148
+                  </a>
+                </div>
+              </div>
+
+              {personalInfo.instagram && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#f09433] via-[#bc1888] to-[#cc2366] text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <InstagramIcon className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-mono uppercase text-muted-foreground block">Instagram</span>
+                    <a
+                      href={personalInfo.instagram}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-foreground hover:text-[#E1306C] transition-colors font-medium"
+                    >
+                      instagram.com/rahulraj2148
+                    </a>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-start gap-3">
                 <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
@@ -181,7 +217,7 @@ export default function ContactPage() {
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g. Sarah Jenkins"
+                    placeholder="Your name or organization"
                     className="w-full bg-surface border border-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-border-accent transition-colors"
                   />
                 </div>
@@ -194,7 +230,7 @@ export default function ContactPage() {
                     type="text"
                     value={formData.company}
                     onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                    placeholder="e.g. Acme Cloud Corp"
+                    placeholder="Company or agency name (Optional)"
                     className="w-full bg-surface border border-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-border-accent transition-colors"
                   />
                 </div>
@@ -210,7 +246,7 @@ export default function ContactPage() {
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="sarah@example.com"
+                    placeholder="your.email@example.com"
                     className="w-full bg-surface border border-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-border-accent transition-colors"
                   />
                 </div>
@@ -223,7 +259,7 @@ export default function ContactPage() {
                     type="text"
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    placeholder="e.g. Principal Engineer Role / Contract"
+                    placeholder="e.g. Full-Stack Developer Role / Project Discussion"
                     className="w-full bg-surface border border-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-border-accent transition-colors"
                   />
                 </div>
@@ -257,11 +293,12 @@ export default function ContactPage() {
                     onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
                     className="w-full bg-surface border border-input rounded-xl px-3.5 py-3 text-sm text-foreground focus:outline-none focus:border-border-accent transition-colors"
                   >
-                    <option value="< $5k">&lt; $5,000</option>
-                    <option value="$5k - $15k">$5,000 - $15,000</option>
-                    <option value="$15k - $30k">$15,000 - $30,000</option>
-                    <option value="$30k+">$30,000+</option>
-                    <option value="Salary / Equity">Salary / Equity Offer</option>
+                    <option value="Flexible / Open to Discussion">Flexible / Open to Discussion</option>
+                    <option value="< ₹50,000">&lt; ₹50,000 (Small Task / MVP)</option>
+                    <option value="₹50,000 – ₹1,50,000">₹50,000 – ₹1,50,000 (Standard Project)</option>
+                    <option value="₹1,50,000 – ₹5,00,000">₹1,50,000 – ₹5,00,000 (Full-Stack Platform)</option>
+                    <option value="₹5,00,000+">₹5,00,000+ (Enterprise / Scale)</option>
+                    <option value="Full-Time CTC / Compensation">Full-Time CTC / Compensation</option>
                   </select>
                 </div>
               </div>

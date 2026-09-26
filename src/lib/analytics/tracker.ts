@@ -7,6 +7,7 @@ export type ClientEventType =
   | 'live_demo_click'
   | 'github_click'
   | 'resume_download'
+  | 'resume_print'
   | 'contact_open'
   | 'contact_submit';
 

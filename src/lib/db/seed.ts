@@ -8,22 +8,7 @@ import {
   experiences as defaultExperiences,
   personalInfo as defaultPersonalInfo,
 } from '@/lib/data/portfolio';
-import { Education } from '@/types';
 
-const defaultEducations: Education[] = [
-  {
-    institution: 'APJ Abdul Kalam Technological University',
-    degree: 'Bachelor of Technology (B.Tech)',
-    field: 'Computer Science & Engineering',
-    duration: '2021 — 2025',
-    score: 'First Class with Distinction',
-    location: 'India',
-    achievements: [
-      'Core coursework: Data Structures, Distributed Systems, Database Management Systems, Computer Networks, AI Systems',
-      'Architected full-stack event systems and multi-portal micro-frontends',
-    ],
-  },
-];
 
 export async function seedInitialPortfolioData(force = false) {
   const conn = await connectToDatabase();
@@ -129,8 +114,12 @@ export async function seedInitialPortfolioData(force = false) {
         personalInfo: defaultPersonalInfo,
         projects: defaultProjects,
         experiences: defaultExperiences,
-        educations: defaultEducations,
         skills: defaultSkills,
+      },
+      $setOnInsert: {
+        educations: [],
+        achievements: [],
+        resumes: [],
       },
     },
     { upsert: true, new: true }

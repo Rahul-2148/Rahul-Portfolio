@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
         $set: {
           name,
           slug,
+          domain: body.domain || 'IT',
           category: body.category || 'Frontend',
           level: body.level || 'proficient',
           projects: Array.isArray(body.projects) ? body.projects : [],
